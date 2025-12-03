@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WarpSimulation", "WarpSimulation\WarpSimulation.csproj", "{C1D9EDEF-9C90-4078-804B-309AAD73B69D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WarpSimulation.Tests", "WarpSimulation.Tests\WarpSimulation.Tests.csproj", "{3CBEBB39-B50C-4542-B89C-AB556FC736AE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C1D9EDEF-9C90-4078-804B-309AAD73B69D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1D9EDEF-9C90-4078-804B-309AAD73B69D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1D9EDEF-9C90-4078-804B-309AAD73B69D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1D9EDEF-9C90-4078-804B-309AAD73B69D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3CBEBB39-B50C-4542-B89C-AB556FC736AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3CBEBB39-B50C-4542-B89C-AB556FC736AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3CBEBB39-B50C-4542-B89C-AB556FC736AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3CBEBB39-B50C-4542-B89C-AB556FC736AE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

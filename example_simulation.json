@@ -1,0 +1,55 @@
+{
+  "drawShortestPath": ["I", "P"],
+  "nodes": {
+    "A": { "x": 200, "y": 200 },
+    "B": { "x": 170, "y": 300 },
+    "C": { "x": 150, "y": 400 },
+    "D": { "x": 300, "y": 180 },
+    "E": { "x": 400, "y": 170 },
+    "F": { "x": 250, "y": 320 },
+    "G": { "x": 350, "y": 310 },
+    "H": { "x": 300, "y": 420 },
+    "I": { "x": 270, "y": 490 },
+    "J": { "x": 500, "y": 400 },
+    "K": { "x": 520, "y": 310 },
+    "L": { "x": 490, "y": 200 },
+    "M": { "x": 600, "y": 290 },
+    "N": { "x": 580, "y": 210 },
+    "O": { "x": 600, "y": 350 },
+    "P": { "x": 570, "y": 410 },
+    "Q": { "x": 700, "y": 270 },
+    "R": { "x": 700, "y": 330 }
+  },
+  "links": [
+    { "vertices": ["A", "B"], "bandwidth": 4096 },
+    { "vertices": ["A", "D"], "bandwidth": 8192 },
+
+    { "vertices": ["B", "C"], "bandwidth": 8192 },
+    { "vertices": ["B", "F"], "bandwidth": 4096 },
+
+    { "vertices": ["D", "E"], "bandwidth": 16384 },
+    { "vertices": ["D", "F"], "bandwidth": 4096 },
+    { "vertices": ["D", "G"], "bandwidth": 4096 },
+
+    { "vertices": ["G", "F"], "bandwidth": 4096 },
+    { "vertices": ["G", "H"], "bandwidth": 4096 },
+    { "vertices": ["C", "H"], "bandwidth": 4096 },
+    { "vertices": ["F", "H"], "bandwidth": 4096 },
+    { "vertices": ["H", "I"], "bandwidth": 16384 },
+    { "vertices": ["C", "I"], "bandwidth": 2048 },
+    { "vertices": ["H", "J"], "bandwidth": 2048 },
+    { "vertices": ["J", "K"], "bandwidth": 4096 },
+    { "vertices": ["K", "L"], "bandwidth": 4096 },
+    { "vertices": ["L", "E"], "bandwidth": 16384 },
+    { "vertices": ["L", "N"], "bandwidth": 4096 },
+    { "vertices": ["N", "M"], "bandwidth": 4096 },
+    { "vertices": ["M", "O"], "bandwidth": 8192 },
+    { "vertices": ["M", "K"], "bandwidth": 7168 },
+    { "vertices": ["P", "O"], "bandwidth": 5120 },
+    { "vertices": ["K", "O"], "bandwidth": 8192 },
+    { "vertices": ["J", "P"], "bandwidth": 4096 },
+    { "vertices": ["Q", "R"], "bandwidth": 4096 },
+    { "vertices": ["M", "Q"], "bandwidth": 4096 },
+    { "vertices": ["O", "R"], "bandwidth": 4096 }
+  ]
+}
