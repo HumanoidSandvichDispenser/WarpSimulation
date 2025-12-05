@@ -50,6 +50,22 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
         return effectiveBandwidth;
     }
 
+    public WarpNode GetOtherNode(WarpNode node)
+    {
+        if (Vertices[0] == node)
+        {
+            return Vertices[1];
+        }
+        else if (Vertices[1] == node)
+        {
+            return Vertices[0];
+        }
+        else
+        {
+            throw new ArgumentException("The provided node is not connected by this link.");
+        }
+    }
+
     public void Draw()
     {
         var v1 = Vertices[0].Position;

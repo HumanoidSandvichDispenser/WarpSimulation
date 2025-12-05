@@ -43,6 +43,18 @@ public class WarpNode
     }
 
     /// <summary>
+    /// Event triggered when a path is accepted during path selection. Useful
+    /// for logging and monitoring.
+    /// </summary>
+    public event Action<WarpNode, DijkstraResult>? OnPathAccepted;
+
+    /// <summary>
+    /// Event triggered when a path is rejected during path selection. Useful
+    /// for logging and monitoring.
+    /// </summary>
+    public event Action<WarpNode, DijkstraResult>? OnPathPruned;
+
+    /// <summary>
     /// A modification of Yen's Algorithm to support WARP multi-path selection
     /// with path filtering based on link attributes to generate diverse paths.
     /// THe number of paths returned is within the range of 0 to
@@ -76,46 +88,80 @@ public class WarpNode
             var edges = nextPath.Path
                 .Zip(nextPath.Path.Skip(1), (a, b) => Database.LocalGraph.GetEdge(a, b)!);
 
-            // minimum available bandwidth is the computed bottleneck along
-            // this path, i.e. the edge with the least available bandwidth
-            double minAvailBandwidth = edges
+            // minimum available capacity is the computed bottleneck along this
+            // path, i.e. the edge with the least available bandwidth
+            double minAvailCapacity = edges
                 .Min(edge => capacity[edge] - usage[edge]);
 
             if (index == 0)
             {
                 // this is shortest path
 
-                // reserve bandwidth along this path
+                // consume along this path
                 foreach (var edge in edges)
                 {
-                    usage[edge] += minAvailBandwidth;
+                    usage[edge] += minAvailCapacity;
                 }
 
+                OnPathAccepted?.Invoke(this, nextPath);
                 yield return nextPath;
             }
             else
             {
-                if (minAvailBandwidth <= 0)
+                if (minAvailCapacity <= 0)
                 {
                     // no more bandwidth available on some edge in this path
+                    OnPathPruned?.Invoke(this, nextPath);
                     continue;
                 }
 
                 // path returned by next iteration of Yen's algorithm
 
-                // if all edges have enough available bandwidth, reserve
-                // the bandwidth along this path
-                if (edges.All(edge => capacity[edge] - usage[edge] >= minAvailBandwidth))
+                // if all edges have enough available capacity, consume along
+                // this path
+                if (edges.All(edge => capacity[edge] - usage[edge] >= minAvailCapacity))
                 {
                     foreach (var edge in edges)
                     {
-                        usage[edge] += minAvailBandwidth;
+                        usage[edge] += minAvailCapacity;
                     }
 
+                    OnPathAccepted?.Invoke(this, nextPath);
                     yield return nextPath;
+                }
+                else
+                {
+                    // at least one edge does not have enough available
+                    // capacity
+                    OnPathPruned?.Invoke(this, nextPath);
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Dumps the contents of the node's database to a string for
+    /// visualization, monitoring, or debugging purposes.
+    /// </summary>
+    public string DumpDatabase()
+    {
+        System.Text.StringBuilder sb = new();
+
+        sb.AppendLine($"Node {Name} Database Dump:");
+
+        foreach (var (node, record) in Database.NodeRecords)
+        {
+            sb.AppendLine($"  Node: {node.Name}");
+            sb.AppendLine($"    Links:");
+            foreach (var linkRecord in record.Links)
+            {
+                var link = linkRecord.Link;
+                sb.AppendLine($"      Link to {link.GetOtherNode(node).Name}:");
+                sb.AppendLine($"        Effective Bandwidth: {linkRecord.EffectiveBandwidth}");
+            }
+        }
+
+        return sb.ToString();
     }
 
     public void Draw()

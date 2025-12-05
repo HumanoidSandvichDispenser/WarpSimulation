@@ -3,6 +3,8 @@ using System.Text.Json;
 
 namespace WarpSimulation;
 
+using DijkstraResult = UndirectedWeightedGraph<WarpNode, Link>.DijkstraResult;
+
 public class Simulation
 {
     private static Simulation? _instance = null;
@@ -19,6 +21,38 @@ public class Simulation
     public void Update(float delta)
     {
 
+    }
+
+    public void ProcessCommand(string command, string[] args)
+    {
+        switch (command)
+        {
+            case "dumpdb":
+                foreach (var node in NetworkGraph.Vertices)
+                {
+                    if (args.Length == 0 || node.Name == args[0])
+                    {
+                        WriteOutput(node.DumpDatabase());
+                    }
+                }
+                break;
+            case "watch":
+                if (args.Length == 0)
+                {
+                    WriteOutput("Usage: watch <node name>");
+                    break;
+                }
+                WatchNode(args[0]);
+                break;
+            default:
+                WriteOutput($"Unknown command: {command}");
+                break;
+        }
+    }
+
+    public void WriteOutput(string text)
+    {
+        Program.WriteOutput(text);
     }
 
     public void Draw()
@@ -72,23 +106,38 @@ public class Simulation
                 .ToArray();
 
             vertices[0].Database.UpdateDatabaseFromGraph(NetworkGraph);
-
-            var paths = vertices[0].KPathSelection(vertices[1], 8);
-
-            foreach (var (path, i) in paths.Select((p, index) => (p, index)))
-            {
-                Console.WriteLine($"Adding rank {i} to path: " +
-                    string.Join(" -> ", path.Path.Select(v => v.Name)));
-                var vertexList = path.Path.ToList();
-                for (int j = 0; j < vertexList.Count - 1; j++)
-                {
-                    var edge = NetworkGraph.GetEdge(vertexList[j], vertexList[j + 1]);
-                    if (edge != null)
-                    {
-                        edge.DrawInfo.Rank.Add(i);
-                    }
-                }
-            }
+            NetworkGraph.DebugDrawShortestPath(vertices[0], vertices[1]);
         }
+    }
+
+    public void WatchNode(string nodeName)
+    {
+        var node = NetworkGraph.Vertices
+            .FirstOrDefault(v => v.Name == nodeName);
+
+        if (node != null)
+        {
+            node.OnPathAccepted += OnPathAccepted;
+            node.OnPathPruned += OnPathPruned;
+            WriteOutput($"Watching node '{nodeName}'.");
+        }
+        else
+        {
+            WriteOutput($"Node '{nodeName}' not found.");
+        }
+    }
+
+    private void OnPathAccepted(WarpNode node, DijkstraResult result)
+    {
+        WriteOutput($"Node {node.Name} accepted path: " +
+            $"{string.Join(" -> ", result.Path.Select(n => n.Name))} " +
+            $"(Cost: {result.TotalWeight:0.##})");
+    }
+
+    private void OnPathPruned(WarpNode node, DijkstraResult result)
+    {
+        WriteOutput($"Node {node.Name} pruned path: " +
+            $"{string.Join(" -> ", result.Path.Select(n => n.Name))} " +
+            $"(Cost: {result.TotalWeight:0.##})");
     }
 }
