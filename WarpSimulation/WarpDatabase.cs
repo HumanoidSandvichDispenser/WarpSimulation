@@ -4,6 +4,10 @@ namespace WarpSimulation;
 
 using DijkstraResult = UndirectedWeightedGraph<WarpNode, Link>.DijkstraResult;
 
+/// <summary>
+/// Attaches information about a candidate route for weight adjustment
+/// and deficit tracking.
+/// </summary>
 public class RouteInformation
 {
     /// <summary>

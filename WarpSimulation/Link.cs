@@ -118,7 +118,7 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
             color = Raylib.ColorLerp(Color.Blue, Color.LightGray, t);
         }
 
-        float thickness = (float)(Bandwidth / 1024.0);
+        float thickness = (float)(Bandwidth / 16384.0);
 
         Raylib.DrawLineEx(v1, v2, thickness, color);
 
