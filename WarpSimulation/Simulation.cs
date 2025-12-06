@@ -13,6 +13,12 @@ public class Simulation
 
     public WarpNetworkGraph NetworkGraph { get; private set; } = new();
 
+    private HashSet<Packets.PhysicalPacket> _packetsInTransit = new();
+
+    public Queue<Packets.PhysicalPacket> AddPacketQueue { get; } = new();
+
+    public Queue<Packets.PhysicalPacket> RemovePacketQueue { get; } = new();
+
     public Simulation()
     {
 
@@ -20,7 +26,24 @@ public class Simulation
 
     public void Update(float delta)
     {
+        while (AddPacketQueue.Count > 0)
+        {
+            var packet = AddPacketQueue.Dequeue();
+            _packetsInTransit.Add(packet);
+        }
 
+        foreach (var packet in _packetsInTransit)
+        {
+            packet.Update(delta);
+        }
+
+        NetworkGraph.Update(delta);
+
+        while (RemovePacketQueue.Count > 0)
+        {
+            var packet = RemovePacketQueue.Dequeue();
+            _packetsInTransit.Remove(packet);
+        }
     }
 
     public void ProcessCommand(string command, string[] args)
@@ -44,6 +67,30 @@ public class Simulation
                 }
                 WatchNode(args[0]);
                 break;
+            case "send":
+                if (args.Length < 4)
+                {
+                    WriteOutput("Usage: send <source> <destination> <message length>");
+                    break;
+                }
+                SendMessage(args[0], args[1], args[2], args[3]);
+                break;
+            case "load":
+                if (args.Length == 0)
+                {
+                    WriteOutput("Usage: load <json file>");
+                    break;
+                }
+                LoadFromJsonFile(System.IO.File.ReadAllText(args[0]));
+                break;
+            case "topk":
+                if (args.Length < 2)
+                {
+                    WriteOutput("Usage: topk <source> <k>");
+                    break;
+                }
+                SetTopK(args[0], args[1]);
+                break;
             default:
                 WriteOutput($"Unknown command: {command}");
                 break;
@@ -58,6 +105,11 @@ public class Simulation
     public void Draw()
     {
         NetworkGraph.Draw();
+
+        foreach (var packet in _packetsInTransit)
+        {
+            packet.Draw();
+        }
     }
 
     public void LoadFromJsonFile(string jsonString)
@@ -95,18 +147,9 @@ public class Simulation
             NetworkGraph.AddEdge(node1, node2, new Link(bandwidth));
         }
 
-        if (root.TryGetProperty("drawShortestPath", out var drawShortestPath))
+        foreach (var node in NetworkGraph.Vertices)
         {
-            Console.WriteLine("Drawing shortest paths...");
-
-            var vertices = drawShortestPath
-                .EnumerateArray()
-                .Select(v => v.GetString())
-                .Select(v => NetworkGraph.Vertices.First(vertex => vertex.Name == v))
-                .ToArray();
-
-            vertices[0].Database.UpdateDatabaseFromGraph(NetworkGraph);
-            NetworkGraph.DebugDrawShortestPath(vertices[0], vertices[1]);
+            node.Database.UpdateDatabaseFromGraph(NetworkGraph);
         }
     }
 
@@ -139,5 +182,51 @@ public class Simulation
         WriteOutput($"Node {node.Name} pruned path: " +
             $"{string.Join(" -> ", result.Path.Select(n => n.Name))} " +
             $"(Cost: {result.TotalWeight:0.##})");
+    }
+
+    public void SendMessage(string startName, string endName, string messageLength, string count)
+    {
+        var start = NetworkGraph.Vertices
+            .FirstOrDefault(v => v.Name == startName);
+        var end = NetworkGraph.Vertices
+            .FirstOrDefault(v => v.Name == endName);
+
+        int length = int.Parse(messageLength);
+        int numMessages = int.Parse(count);
+
+        if (start is null || end is null)
+        {
+            WriteOutput("Invalid start or end node.");
+            return;
+        }
+
+        for (int i = 0; i < numMessages; i++)
+        {
+            var datagram = new Packets.Datagram(start, end, new byte[length]);
+            start.ReceiveDatagram(datagram);
+        }
+
+        WriteOutput($"Sending message from {startName} to {endName} of size {length} bytes.");
+    }
+
+    public void SetTopK(string nodeName, string kStr)
+    {
+        var node = NetworkGraph.Vertices
+            .FirstOrDefault(v => v.Name == nodeName);
+
+        if (node is null)
+        {
+            WriteOutput("Invalid node.");
+            return;
+        }
+
+        if (!int.TryParse(kStr, out int k) || k <= 0)
+        {
+            WriteOutput("Invalid value for k.");
+            return;
+        }
+
+        node.Database.TopK = k;
+        WriteOutput($"Node {nodeName} set to use top {k} paths for routing.");
     }
 }

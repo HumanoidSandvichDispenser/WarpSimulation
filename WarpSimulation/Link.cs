@@ -37,6 +37,8 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
 
     public WarpNode[] Vertices { get; set; } = new WarpNode[2];
 
+    public Packets.PhysicalPacket?[] Transit { get; } = new Packets.PhysicalPacket?[2];
+
     public Link(double bandwidth = 4096)
     {
         Bandwidth = bandwidth;
@@ -50,20 +52,57 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
         return effectiveBandwidth;
     }
 
-    public WarpNode GetOtherNode(WarpNode node)
+    public int GetNodeIndex(WarpNode node)
     {
         if (Vertices[0] == node)
         {
-            return Vertices[1];
+            return 0;
         }
         else if (Vertices[1] == node)
         {
-            return Vertices[0];
+            return 1;
         }
         else
         {
             throw new ArgumentException("The provided node is not connected by this link.");
         }
+    }
+
+    public WarpNode GetOtherNode(WarpNode node)
+    {
+        int otherIndex = GetNodeIndex(node) == 0 ? 1 : 0;
+        return Vertices[otherIndex];
+    }
+
+    public bool TransmitPacket(Packets.PhysicalPacket packet)
+    {
+        int index = GetNodeIndex(packet.StartNode);
+
+        if (Transit[index] is not null)
+        {
+            return false;
+        }
+
+        var simulation = Simulation.Instance;
+        simulation.AddPacketQueue.Enqueue(packet);
+        float transmissionTime = (float)(packet.Size * 8 / EffectiveBandwidth);
+        packet.TransmissionTime = transmissionTime;
+        packet.OnTransmissionComplete += OnPacketTransmissionComplete;
+
+        Transit[index] = packet;
+        return true;
+    }
+
+    private void OnPacketTransmissionComplete(Packets.PhysicalPacket packet)
+    {
+        packet.OnTransmissionComplete -= OnPacketTransmissionComplete;
+
+        int index = GetNodeIndex(packet.StartNode);
+        Transit[index] = null;
+
+        var simulation = Simulation.Instance;
+        simulation.RemovePacketQueue.Enqueue(packet);
+        packet.EndNode.ReceiveDatagram(packet.Datagram);
     }
 
     public void Draw()

@@ -4,7 +4,10 @@ public class WarpNetworkGraph : UndirectedWeightedGraph<WarpNode, Link>
 {
     public void Update(float delta)
     {
-
+        foreach (var node in Vertices)
+        {
+            node.Update(delta);
+        }
     }
 
     public void Draw()

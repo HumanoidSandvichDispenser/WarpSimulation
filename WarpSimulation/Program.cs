@@ -6,7 +6,7 @@ namespace WarpSimulation;
 internal static class Program
 {
     // lock object for console
-    private static object s_consoleLock = new object();
+    private static System.Threading.Lock s_consoleLock = new();
 
     // input buffer
     private static string s_inputBuffer = string.Empty;
@@ -30,17 +30,20 @@ internal static class Program
             simulation.LoadFromJsonFile(jsonString);
         }
 
-        StartInputThread();
+        var thread = new Thread(InputThread);
+        thread.IsBackground = true;
+        thread.Start();
 
         while (!Raylib.WindowShouldClose())
         {
             while (s_commandQueue.TryDequeue(out string? input))
             {
                 input = input.Trim();
-                var inputs = input.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                var inputs = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
                 string command = inputs[0];
                 string[] argList = inputs.Skip(1).ToArray();
+
                 simulation.ProcessCommand(command, argList);
             }
 
@@ -62,53 +65,69 @@ internal static class Program
         Raylib.CloseWindow();
     }
 
-    static void StartInputThread()
+    static void InputThread()
     {
-        new Thread(() =>
+        lock (s_consoleLock)
         {
-            lock (s_consoleLock)
-            {
-                RedrawInputLine();
-            }
+            RedrawInputLine();
+        }
 
-            while (true)
+        while (!Raylib.WindowShouldClose())
+        {
+            if (Console.IsInputRedirected)
             {
-                var key = Console.ReadKey(intercept: true);
-                bool ctrl = (key.Modifiers & ConsoleModifiers.Control) != 0;
-
-                lock (s_consoleLock)
+                string? line = Console.ReadLine();
+                if (line != null)
                 {
-                    if (key.Key == ConsoleKey.Enter)
-                    {
-                        Console.SetCursorPosition(0, Console.CursorTop);
-
-                        string command = s_inputBuffer;
-                        s_inputBuffer = "";
-
-                        s_commandQueue.Enqueue(command);
-                    }
-                    else if (key.Key == ConsoleKey.Backspace)
-                    {
-                        if (s_inputBuffer.Length > 0)
-                        {
-                            s_inputBuffer = s_inputBuffer[..^1];
-                        }
-                    }
-                    else if (ctrl && key.Key == ConsoleKey.D)
-                    {
-                        Environment.Exit(0);
-                    }
-                    else
-                    {
-                        s_inputBuffer += key.KeyChar;
-                    }
+                    s_commandQueue.Enqueue(line);
+                    continue;
+                }
+                else
+                {
+                    break;
                 }
             }
-        }).Start();
+
+            var key = Console.ReadKey(intercept: true);
+            bool ctrl = (key.Modifiers & ConsoleModifiers.Control) != 0;
+
+            lock (s_consoleLock)
+            {
+                if (key.Key == ConsoleKey.Enter)
+                {
+                    Console.SetCursorPosition(0, Console.CursorTop);
+
+                    string command = s_inputBuffer;
+                    s_inputBuffer = "";
+
+                    s_commandQueue.Enqueue(command);
+                }
+                else if (key.Key == ConsoleKey.Backspace)
+                {
+                    if (s_inputBuffer.Length > 0)
+                    {
+                        s_inputBuffer = s_inputBuffer[..^1];
+                    }
+                }
+                else if (ctrl && key.Key == ConsoleKey.D)
+                {
+                    Environment.Exit(0);
+                }
+                else
+                {
+                    s_inputBuffer += key.KeyChar;
+                }
+            }
+        }
     }
 
     private static void RedrawInputLine()
     {
+        if (Console.IsOutputRedirected)
+        {
+            return;
+        }
+
         int bottom = Console.WindowTop + Console.WindowHeight - 1;
 
         // move to bottom line
@@ -126,6 +145,12 @@ internal static class Program
     {
         lock (s_consoleLock)
         {
+            if (Console.IsOutputRedirected)
+            {
+                Console.WriteLine(text);
+                return;
+            }
+
             int bottom = Console.WindowTop + Console.WindowHeight - 1;
 
             Console.SetCursorPosition(0, bottom);
