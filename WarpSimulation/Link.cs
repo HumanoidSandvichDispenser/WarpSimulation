@@ -16,30 +16,13 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
     /// </summary>
     public double EffectiveBandwidth => CalculateEffectiveBandwidth();
 
-    public bool IsMarked { get; set; }
-
     /// <summary>
     /// The link's bandwidth in bits per second. This is the raw bandwidth
     /// used for the actual transmission time.
     /// </summary>
     public double Bandwidth { get; set; }
 
-    private double _failureRate = 0.0;
-
     public EdgeDrawInfo DrawInfo { get; set; } = new();
-
-    /// <summary>
-    /// The link's failure rate, a value between 0.0 and 1.0.
-    /// /// </summary>
-    public double FailureRate
-    {
-        get => _failureRate;
-        set
-        {
-            _failureRate = Math.Clamp(value, 0.0, 1.0);
-            CalculateEffectiveBandwidth();
-        }
-    }
 
     public bool FullDuplex { get; set; } = true;
 
@@ -62,8 +45,8 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
             effectiveBandwidth *= 0.5;
         }
 
-        double loss1 = Vertices[0].ByteLossRate;
-        double loss2 = Vertices[1].ByteLossRate;
+        double loss1 = Vertices[0]?.ByteLossRate ?? 0;
+        double loss2 = Vertices[1]?.ByteLossRate ?? 0;
 
         effectiveBandwidth *= (1.0 - loss1) * (1.0 - loss2);
 
@@ -104,6 +87,7 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
     public bool TransmitPacket(Packets.PhysicalPacket packet)
     {
         int index = GetNodeIndex(packet.StartNode);
+        float transmissionTime = (float)(packet.Size * 8 / EffectiveBandwidth);
 
         if (Transit[index] is not null)
         {
@@ -111,8 +95,7 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
         }
 
         var simulation = Simulation.Instance;
-        simulation.AddPacketQueue.Enqueue(packet);
-        float transmissionTime = (float)(packet.Size * 8 / EffectiveBandwidth);
+        simulation.AddUpdateableQueue.Enqueue(packet);
         packet.TransmissionTime = transmissionTime;
         packet.OnTransmissionComplete += OnPacketTransmissionComplete;
 
@@ -128,7 +111,7 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
         Transit[index] = null;
 
         var simulation = Simulation.Instance;
-        simulation.RemovePacketQueue.Enqueue(packet);
+        simulation.RemoveUpdateableQueue.Enqueue(packet);
         packet.EndNode.ReceiveDatagram(packet.Datagram);
     }
 
@@ -183,6 +166,17 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
         }
 
         throw new ArgumentException($"Object is not a {nameof(IEdge)}");
+    }
+
+    /// <summary>
+    /// Creates a copy of this link.
+    /// </summary>
+    public Link Clone()
+    {
+        return new Link(Bandwidth)
+        {
+            FullDuplex = this.FullDuplex,
+        };
     }
 }
 

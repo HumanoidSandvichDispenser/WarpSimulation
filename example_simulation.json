@@ -37,7 +37,7 @@
     { "vertices": ["F", "H"], "bandwidth": 65536 },
     { "vertices": ["H", "I"], "bandwidth": 262144 },
     { "vertices": ["C", "I"], "bandwidth": 32768 },
-    { "vertices": ["H", "J"], "bandwidth": 32768 },
+    { "vertices": ["H", "J"], "bandwidth": 16384 },
     { "vertices": ["J", "K"], "bandwidth": 65536 },
     { "vertices": ["K", "L"], "bandwidth": 65536 },
     { "vertices": ["L", "E"], "bandwidth": 262144 },

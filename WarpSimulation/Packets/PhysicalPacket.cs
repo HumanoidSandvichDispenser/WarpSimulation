@@ -7,7 +7,7 @@ namespace WarpSimulation.Packets;
 /// Represents a physical packet in the WARP network, encapsulating
 /// a datagram. Link layer is abstracted away for simplicity.
 /// </summary>
-public class PhysicalPacket : IPacket
+public class PhysicalPacket : IPacket, IUpdateable, IDrawable
 {
     public WarpNode StartNode { get; set; } = null!;
 
@@ -19,7 +19,11 @@ public class PhysicalPacket : IPacket
 
     public Datagram Datagram { get; set; }
 
-    public int Size => Datagram.Size;
+    public int HeaderSize => 0;
+
+    public int PayloadSize => Datagram.Size;
+
+    public int Size => HeaderSize + PayloadSize;
 
     public event Action<PhysicalPacket>? OnTransmissionComplete;
 

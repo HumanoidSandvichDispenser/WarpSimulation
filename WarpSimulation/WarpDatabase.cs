@@ -50,7 +50,6 @@ public class WarpDatabase
     /// A record of a warp node's state in the database.
     /// </summary>
     public record struct WarpNodeRecord(
-        ulong SequenceNumber,
         WarpNode Node,
         List<LinkRecord> Links);
 
@@ -65,6 +64,10 @@ public class WarpDatabase
     public Dictionary<Link, LinkRecord> LinkRecords { get; private set; } = new();
 
     public Dictionary<WarpNode, List<RouteInformation>> Routes { get; private set; } = new();
+
+    public Dictionary<WarpNode, int> SequenceNumbers { get; private set; } = new();
+
+    public int MaxSequenceNumber { get; private set; } = 0;
 
     public WarpNode Owner { get; init; }
 
@@ -90,26 +93,66 @@ public class WarpDatabase
     {
         // initialize with self
         var selfRecord = new WarpNodeRecord(
-            SequenceNumber: 0,
             Node: owner,
             Links: new List<LinkRecord>());
-        UpdateDatabase(new[] { selfRecord });
+        UpdateDatabase(selfRecord);
 
         Owner = owner;
     }
 
-    public void UpdateDatabase(IEnumerable<WarpNodeRecord> updates)
+    /// <summary>
+    /// Processes an incoming LSA datagram, updating the local database
+    /// if the LSA is newer than the stored version.
+    /// </summary>
+    /// <returns>True if the LSA was processed and the database updated; false otherwise.</returns>
+    public bool ProcessLsa(Packets.WarpLsaDatagram lsa)
     {
-        foreach (var update in updates)
+        if (!SequenceNumbers.ContainsKey(lsa.NodeRecord.Node))
         {
-            LocalGraph.AddVertex(update.Node);
-            NodeRecords[update.Node] = update;
+            SequenceNumbers[lsa.NodeRecord.Node] = 0;
+        }
 
-            foreach (var link in update.Links)
+        if (lsa.SequenceNumber <= SequenceNumbers[lsa.NodeRecord.Node])
+        {
+            // stale LSA, ignore
+            return false;
+        }
+
+        // update max sequence number seen, for transmission purposes
+        if (lsa.SequenceNumber > MaxSequenceNumber)
+        {
+            MaxSequenceNumber = lsa.SequenceNumber;
+        }
+
+        SequenceNumbers[lsa.NodeRecord.Node] = lsa.SequenceNumber;
+        UpdateDatabase(lsa.NodeRecord);
+        return true;
+    }
+
+    /// <summary>
+    /// Updates the local database with the provided node record with an
+    /// upsert operation, adding or updating the node and its links, and
+    /// removing any links not present in the update.
+    /// </summary>
+    public void UpdateDatabase(WarpNodeRecord update)
+    {
+        LocalGraph.AddVertex(update.Node);
+        NodeRecords[update.Node] = update;
+
+        // add/update edges from update
+        foreach (var link in update.Links)
+        {
+            LocalGraph.AddVertex(link.ConnectedNode);
+            LocalGraph.AddEdge(update.Node, link.ConnectedNode, link.Link.Clone());
+            LinkRecords[link.Link] = link;
+        }
+
+        // remove edges not in update
+        foreach (var (vertex, edge) in LocalGraph.Adjacency[update.Node])
+        {
+            if (!update.Links.Any(l => l.ConnectedNode == vertex))
             {
-                LocalGraph.AddVertex(link.ConnectedNode);
-                LocalGraph.AddEdge(update.Node, link.ConnectedNode, link.Link);
-                LinkRecords[link.Link] = link;
+                LocalGraph.RemoveEdge(update.Node, vertex);
             }
         }
 
@@ -118,37 +161,43 @@ public class WarpDatabase
 
     public void UpdateDatabaseFromGraph(WarpNetworkGraph graph)
     {
+        LocalGraph.Clear();
+
         // for each vertex, create a node record and link records
         foreach (var vertex in graph.Vertices)
         {
             var links = new List<LinkRecord>();
+            var seenLinks = new HashSet<Link>();
 
             foreach (var (neighbor, edge) in graph.Adjacency[vertex])
             {
+                if (seenLinks.Contains(edge))
+                {
+                    continue;
+                }
+
+                var clonedEdge = edge.Clone();
                 var linkRecord = new LinkRecord(
-                    Link: edge,
+                    Link: clonedEdge,
                     ConnectedNode: neighbor,
                     EffectiveBandwidth: (float)edge.CalculateEffectiveBandwidth());
 
                 links.Add(linkRecord);
 
-                LinkRecords[edge] = linkRecord;
+                LinkRecords[clonedEdge] = linkRecord;
+
+                seenLinks.Add(edge);
+
+                LocalGraph.AddEdge(vertex, neighbor, clonedEdge);
             }
 
             var nodeRecord = new WarpNodeRecord(
-                SequenceNumber: 0,
                 Node: vertex,
                 Links: links);
 
             NodeRecords[vertex] = nodeRecord;
+            LocalGraph.AddVertex(vertex);
         }
-
-        LocalGraph = graph;
-    }
-
-    public void UpdateDeficits(List<RouteInformation> routes, int bytesSent)
-    {
-        throw new NotImplementedException();
     }
 
     /// <summary>

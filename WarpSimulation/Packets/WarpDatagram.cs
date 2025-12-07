@@ -12,11 +12,11 @@ public class WarpDatagram : Datagram
         WarpNode source,
         WarpNode destination,
         List<WarpNode> path,
-        byte[] payload)
+        IPacket? payload)
         : base(source, destination, payload)
     {
         Path = path;
     }
 
-    public override int Size => base.Size + (Path.Count * 4) + 4;
+    public override int HeaderSize => base.HeaderSize + 4 + (Path.Count * 4);
 }

@@ -8,7 +8,8 @@ public class PhysicalPacketTest
         var startNode = new WarpNode("Start");
         var endNode = new WarpNode("End");
 
-        var datagram = new Packets.Datagram(startNode, endNode, new byte[128]);
+        var segment = new TransportLayer.TcpSegment(null!, null!, new byte[128]);
+        var datagram = new Packets.Datagram(startNode, endNode, segment);
 
         var packet = new Packets.PhysicalPacket(startNode, endNode, datagram)
         {

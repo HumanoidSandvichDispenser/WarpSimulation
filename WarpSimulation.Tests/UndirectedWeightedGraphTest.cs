@@ -8,8 +8,6 @@ public partial class UndirectedWeightedGraphTest
     {
         public double Weight { get; private set; }
 
-        public bool IsMarked { get; set; } = false;
-
         public TestEdge(double weight = 1.0)
         {
             Weight = weight;

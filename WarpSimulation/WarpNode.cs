@@ -37,6 +37,10 @@ public class WarpNode
 
     public double ByteLossRate { get; private set; } = 0.0f;
 
+    public float HelloInterval { get; set; } = 5.0f;
+
+    public float HelloBroadcastTimer { get; private set; } = 0.0f;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="WarpNode"/> class.
     /// </summary>
@@ -216,6 +220,29 @@ public class WarpNode
         {
             OnDatagramReceived?.Invoke(this, datagram);
         }
+        else if (datagram.Destination is null)
+        {
+            if (datagram is not Packets.WarpLsaDatagram lsa)
+            {
+                // only broadcast LSA datagrams
+                return;
+            }
+
+            // update database with LSA (returns false if LSA is stale)
+            if (!Database.ProcessLsa(lsa))
+            {
+                // do not broadcast stale LSA
+                return;
+            }
+
+            OnDatagramReceived?.Invoke(this, datagram);
+            var graph = Simulation.Instance.NetworkGraph;
+            var neighborsEdges = graph.GetNeighbors(this);
+            foreach (var (neighbor, edge) in neighborsEdges)
+            {
+                SendDatagram(neighbor, datagram);
+            }
+        }
         else
         {
             var (nextDatagram, nextHop) = NextHop(datagram);
@@ -227,6 +254,7 @@ public class WarpNode
             else
             {
                 // drop datagram
+                return;
             }
         }
     }
@@ -249,6 +277,18 @@ public class WarpNode
             }
             PacketQueue[link].Enqueue(physicalPacket);
         }
+    }
+
+    /// <summary>
+    /// Sends an LSA as a hello packet to all directly connected neighbors.
+    /// </summary>
+    /// <param name="broadcast">
+    /// If <c>true</c>, the hello packet propagates throughout the network.
+    /// Otherwise, it is only sent to direct neighbors.
+    /// </param>
+    public void SendHello(bool broadcast)
+    {
+        throw new NotImplementedException();
     }
 
     public void Update(float deltaTime)

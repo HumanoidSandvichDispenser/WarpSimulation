@@ -13,11 +13,11 @@ public class Simulation
 
     public WarpNetworkGraph NetworkGraph { get; private set; } = new();
 
-    private HashSet<Packets.PhysicalPacket> _packetsInTransit = new();
+    private HashSet<IUpdateable> _updateables = new();
 
-    public Queue<Packets.PhysicalPacket> AddPacketQueue { get; } = new();
+    public Queue<IUpdateable> AddUpdateableQueue { get; } = new();
 
-    public Queue<Packets.PhysicalPacket> RemovePacketQueue { get; } = new();
+    public Queue<IUpdateable> RemoveUpdateableQueue { get; } = new();
 
     /// <summary>
     /// A multiplier affecting the rate of traffic generation. Higher values
@@ -32,23 +32,23 @@ public class Simulation
 
     public void Update(float delta)
     {
-        while (AddPacketQueue.Count > 0)
+        while (AddUpdateableQueue.Count > 0)
         {
-            var packet = AddPacketQueue.Dequeue();
-            _packetsInTransit.Add(packet);
+            var packet = AddUpdateableQueue.Dequeue();
+            _updateables.Add(packet);
         }
 
-        foreach (var packet in _packetsInTransit)
+        foreach (var packet in _updateables)
         {
             packet.Update(delta);
         }
 
         NetworkGraph.Update(delta);
 
-        while (RemovePacketQueue.Count > 0)
+        while (RemoveUpdateableQueue.Count > 0)
         {
-            var packet = RemovePacketQueue.Dequeue();
-            _packetsInTransit.Remove(packet);
+            var packet = RemoveUpdateableQueue.Dequeue();
+            _updateables.Remove(packet);
         }
     }
 
@@ -74,12 +74,12 @@ public class Simulation
                 WatchNode(args[0]);
                 break;
             case "send":
-                if (args.Length < 4)
+                if (args.Length < 3)
                 {
                     WriteOutput("Usage: send <source> <destination> <message length>");
                     break;
                 }
-                SendMessage(args[0], args[1], args[2], args[3]);
+                SendMessage(args[0], args[1], args[2]);
                 break;
             case "load":
                 if (args.Length == 0)
@@ -112,9 +112,12 @@ public class Simulation
     {
         NetworkGraph.Draw();
 
-        foreach (var packet in _packetsInTransit)
+        foreach (var packet in _updateables)
         {
-            packet.Draw();
+            if (packet is IDrawable drawable)
+            {
+                drawable.Draw();
+            }
         }
     }
 
@@ -204,7 +207,7 @@ public class Simulation
             $"(Cost: {result.TotalWeight:0.##})");
     }
 
-    public void SendMessage(string startName, string endName, string messageLength, string count)
+    public void SendMessage(string startName, string endName, string messageLength)
     {
         var start = NetworkGraph.Vertices
             .FirstOrDefault(v => v.Name == startName);
@@ -212,7 +215,6 @@ public class Simulation
             .FirstOrDefault(v => v.Name == endName);
 
         int length = int.Parse(messageLength);
-        int numMessages = int.Parse(count);
 
         if (start is null || end is null)
         {
@@ -220,11 +222,27 @@ public class Simulation
             return;
         }
 
-        for (int i = 0; i < numMessages; i++)
+        TransportLayer.TcpSession sender = new(start);
+        TransportLayer.TcpSession receiver = new(end);
+        sender.PeerSession = receiver;
+        receiver.PeerSession = sender;
+
+        sender.OnAllDataReceived += (data, time) =>
         {
-            var datagram = new Packets.Datagram(start, end, new byte[length]);
-            start.ReceiveDatagram(datagram);
-        }
+            WriteOutput($"Message of size {data.Length} bytes " +
+                $"received by {endName} from {startName} " +
+                $"in {time:0.##} seconds.");
+        };
+
+        receiver.OnDataReceived += (data) =>
+        {
+            WriteOutput($"Node {endName} received {data.Length} bytes of data.");
+        };
+
+        AddUpdateableQueue.Enqueue(sender);
+        AddUpdateableQueue.Enqueue(receiver);
+
+        sender.SendData(new byte[length]);
 
         WriteOutput($"Sending message from {startName} to {endName} of size {length} bytes.");
     }
