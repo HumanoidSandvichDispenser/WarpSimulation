@@ -19,6 +19,12 @@ public class Simulation
 
     public Queue<Packets.PhysicalPacket> RemovePacketQueue { get; } = new();
 
+    /// <summary>
+    /// A multiplier affecting the rate of traffic generation. Higher values
+    /// result in more traffic.
+    /// </summary>
+    public double TrafficDensity { get; set; } = 1.0;
+
     public Simulation()
     {
 
@@ -138,13 +144,27 @@ public class Simulation
 
             var bandwidth = linkElem.GetProperty("bandwidth").GetDouble();
 
+            bool fullDuplex = true;
+
+            if (linkElem.TryGetProperty("fullDuplex", out var fullDuplexElem))
+            {
+                fullDuplex = fullDuplexElem.GetBoolean();
+            }
+
             var node1 = NetworkGraph.Vertices
                 .First(v => v.Name == vertices[0]);
 
             var node2 = NetworkGraph.Vertices
                 .First(v => v.Name == vertices[1]);
 
-            NetworkGraph.AddEdge(node1, node2, new Link(bandwidth));
+            var link = new Link(bandwidth);
+
+            if (!fullDuplex)
+            {
+                link.FullDuplex = false;
+            }
+
+            NetworkGraph.AddEdge(node1, node2, link);
         }
 
         foreach (var node in NetworkGraph.Vertices)

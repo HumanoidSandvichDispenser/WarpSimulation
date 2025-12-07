@@ -35,6 +35,8 @@ public class WarpNode
     /// </summary>
     public int TotalDroppedPackets { get; private set; } = 0;
 
+    public double ByteLossRate { get; private set; } = 0.0f;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="WarpNode"/> class.
     /// </summary>

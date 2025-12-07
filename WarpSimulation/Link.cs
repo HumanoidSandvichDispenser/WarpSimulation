@@ -9,12 +9,18 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
 
     public double Weight => _weight;
 
+    /// <summary>
+    /// The link's effective bandwidth in bits per second, accounting for
+    /// failure rate, processing delay, and other factors. This is the
+    /// bandwidth used for routing calculations.
+    /// </summary>
     public double EffectiveBandwidth => CalculateEffectiveBandwidth();
 
     public bool IsMarked { get; set; }
 
     /// <summary>
-    /// The link's bandwidth in bits per second.
+    /// The link's bandwidth in bits per second. This is the raw bandwidth
+    /// used for the actual transmission time.
     /// </summary>
     public double Bandwidth { get; set; }
 
@@ -35,6 +41,8 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
         }
     }
 
+    public bool FullDuplex { get; set; } = true;
+
     public WarpNode[] Vertices { get; set; } = new WarpNode[2];
 
     public Packets.PhysicalPacket?[] Transit { get; } = new Packets.PhysicalPacket?[2];
@@ -47,8 +55,27 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
 
     public double CalculateEffectiveBandwidth()
     {
-        double effectiveBandwidth = Bandwidth * (1.0 - FailureRate);
-        _weight = 1.0 / effectiveBandwidth;
+        double effectiveBandwidth = Bandwidth;
+
+        if (!FullDuplex)
+        {
+            effectiveBandwidth *= 0.5;
+        }
+
+        double loss1 = Vertices[0].ByteLossRate;
+        double loss2 = Vertices[1].ByteLossRate;
+
+        effectiveBandwidth *= (1.0 - loss1) * (1.0 - loss2);
+
+        if (effectiveBandwidth == 0)
+        {
+            _weight = double.PositiveInfinity;
+        }
+        else
+        {
+            _weight = 1.0 / effectiveBandwidth;
+        }
+
         return effectiveBandwidth;
     }
 
@@ -109,23 +136,38 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
     {
         var v1 = Vertices[0].Position;
         var v2 = Vertices[1].Position;
-        var color = new Color(224, 224, 224);
+        var color = new Color(200, 200, 200);
 
-        if (DrawInfo.Rank.Count > 0)
+        if (Transit[0] is not null || Transit[1] is not null)
         {
-            // Highlighted path
-            float t = (float)DrawInfo.Rank[0] / 2.5f;
-            color = Raylib.ColorLerp(Color.Blue, Color.LightGray, t);
+            color = new Color(128, 128, 128);
         }
 
         float thickness = (float)(Bandwidth / 16384.0);
 
-        Raylib.DrawLineEx(v1, v2, thickness, color);
+        if (FullDuplex)
+        {
+            Raylib.DrawLineEx(v1, v2, thickness, color);
+        }
+        else
+        {
+            // draw as a dotted line for half-duplex links
+            float segmentDiameter = thickness;
+            Vector2 direction = Vector2.Normalize(v2 - v1);
+            float totalLength = Vector2.Distance(v1, v2);
+            int segmentCount = (int)(totalLength / segmentDiameter);
+            for (int i = 0; i < segmentCount; i += 2)
+            {
+                // draw circles
+                Vector2 segmentCenter = v1 + direction * (i + 0.5f) * segmentDiameter;
+                Raylib.DrawCircleV(segmentCenter, segmentDiameter / 2, color);
+            }
+        }
 
         Vector2 center = (v1 + v2) / 2;
 
         const int fontSize = 20;
-        string text = $"{EffectiveBandwidth / 1024.0:0.##}";
+        string text = $"{Bandwidth / 1024.0:0.##}";
         int width = Raylib.MeasureText(text, fontSize);
         Vector2 textPos = new Vector2(
             center.X - width / 2,
