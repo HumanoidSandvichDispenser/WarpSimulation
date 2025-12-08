@@ -7,11 +7,11 @@ public class Datagram : IPacket
 {
     public WarpNode Source { get; set; }
 
-    public WarpNode Destination { get; set; }
+    public WarpNode? Destination { get; set; }
 
     public IPacket? Payload { get; set; }
 
-    public Datagram(WarpNode source, WarpNode destination, IPacket? payload = null)
+    public Datagram(WarpNode source, WarpNode? destination, IPacket? payload = null)
     {
         Source = source;
         Destination = destination;

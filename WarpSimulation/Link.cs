@@ -93,6 +93,14 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
         {
             return false;
         }
+        else if (!FullDuplex)
+        {
+            int otherIndex = 1 - index;
+            if (Transit[otherIndex] is not null)
+            {
+                return false;
+            }
+        }
 
         var simulation = Simulation.Instance;
         simulation.AddUpdateableQueue.Enqueue(packet);
@@ -115,6 +123,66 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
         packet.EndNode.ReceiveDatagram(packet.Datagram);
     }
 
+    public bool Equals(IEdge? other)
+    {
+        if (other is Link otherLink)
+        {
+            return (Vertices[0] == otherLink.Vertices[0] &&
+                    Vertices[1] == otherLink.Vertices[1]) ||
+                   (Vertices[0] == otherLink.Vertices[1] &&
+                    Vertices[1] == otherLink.Vertices[0]);
+        }
+        return false;
+    }
+
+    public void Update(float delta)
+    {
+        if (FullDuplex)
+        {
+            // try to transmit packets in both directions
+            if (Transit[0] is null)
+            {
+                TryDequeueNode(0);
+            }
+
+            if (Transit[1] is null)
+            {
+                TryDequeueNode(1);
+            }
+        }
+        else
+        {
+            // random access for half-duplex links
+            Random rand = new();
+            int direction = rand.Next(0, 2);
+            int otherDirection = 1 - direction;
+
+            if (!TryDequeueNode(direction))
+            {
+                TryDequeueNode(otherDirection);
+            }
+        }
+    }
+
+    private bool TryDequeueNode(int index)
+    {
+        WarpNode node = Vertices[index];
+        if (node.PacketQueue.ContainsKey(this))
+        {
+            var queue = node.PacketQueue[this];
+            if (queue.Count > 0)
+            {
+                var packet = queue.Peek();
+                if (TransmitPacket(packet))
+                {
+                    queue.Dequeue();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public void Draw()
     {
         var v1 = Vertices[0].Position;
@@ -126,7 +194,7 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
             color = new Color(128, 128, 128);
         }
 
-        float thickness = (float)(Bandwidth / 16384.0);
+        float thickness = (float)(Bandwidth / 65536);
 
         if (FullDuplex)
         {

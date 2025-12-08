@@ -1,5 +1,12 @@
 namespace WarpSimulation.TransportLayer;
 
+/// <summary>
+/// A simplified TCP session implementation using TCP Reno congestion control
+/// algorithm. This implementation omits details related to TCP such as
+/// connection establishment or teardown, focusing solely on data transfer.
+/// However, it does use 30 second initial RTO to simulate handshake timeout,
+/// and this RTO is replaced once RTT measurements are made.
+/// </summary>
 public class TcpSession : IUpdateable
 {
     public WarpNode Node { get; set; }
@@ -14,9 +21,21 @@ public class TcpSession : IUpdateable
 
     public uint NextSeqNum { get; set; }
 
+    private Queue<byte[]> _sendQueue = new();
+
+    /// <summary>
+    /// Congestion window timer, used to increase the congestion window per
+    /// RTT.
+    /// </summary>
+    public float CwndTimer { get; set; } = 0.0f;
+
     public int SendWindowSize { get; set; } = 1;
 
-    private Queue<byte[]> _sendQueue = new();
+    public int SlowStartThreshold { get; set; } = int.MaxValue;
+
+    private int _dupAckCount = 0;
+
+    private uint _lastAckedSeqNum = uint.MaxValue;
 
     #endregion
 
@@ -37,8 +56,12 @@ public class TcpSession : IUpdateable
     /// </summary>
     public float ElapsedTime { get; private set; } = 0.0f;
 
-    private float _rto = 1.0f;
+    private float _rto = 30.0f;
+    private float? _rtt = null;
+    private float _devRtt = 0;
     private const int MSS = 1460; // Maximum Segment Size
+    private const float alpha = 0.125f;
+    private const float beta = 0.25f;
     private bool _started = false;
 
     public event Action<byte[]>? OnDataReceived;
@@ -182,6 +205,20 @@ public class TcpSession : IUpdateable
             if (seqNum < ackNumber)
             {
                 toRemove.Add(seqNum);
+
+                // update RTT estimate
+                float sampleRtt = _unacked[seqNum].Timer;
+                if (_rtt == null)
+                {
+                    _rtt = sampleRtt;
+                }
+                else
+                {
+                    _rtt = 0.875f * _rtt + 0.125f * sampleRtt;
+                    float deviation = Math.Abs(sampleRtt - _rtt.Value);
+                    _devRtt = (1 - beta) * _devRtt + beta * deviation;
+                }
+                _rto = _rtt.Value + 4 * _devRtt;
             }
         }
 
@@ -190,28 +227,71 @@ public class TcpSession : IUpdateable
             _unacked.Remove(seqNum);
         }
 
+        if (ackNumber == _lastAckedSeqNum)
+        {
+            if (++_dupAckCount >= 3)
+            {
+                // triple duplicate ACKs: fast retransmit
+                if (_unacked.ContainsKey(ackNumber))
+                {
+                    var entry = _unacked[ackNumber];
+                    SendSegment(entry.Segment);
+                    entry.Timer = 0.0f;
+                    _unacked[ackNumber] = entry;
+
+                    // congestion control: on triple duplicate ACKs, halve the
+                    // window and enter congestion avoidance
+
+                    SlowStartThreshold = Math.Max(SendWindowSize / 2, 2);
+                    SendWindowSize = SlowStartThreshold;
+
+                    Console.WriteLine($"Triple duplicate ACKs for segment {ackNumber}, " +
+                        $"reducing window to {SendWindowSize}");
+                }
+            }
+        }
+        else
+        {
+            _dupAckCount = 1;
+            _lastAckedSeqNum = ackNumber;
+        }
+
         // update send base
         if (ackNumber > SendBase)
         {
             SendBase = ackNumber;
         }
 
-        // implement congestion control (simple additive increase)
-        if (_unacked.Count == 0)
+        // draw a line of all segments, number for acked segment, hash for unacked
+        // and empty for not yet sent
+        System.Text.StringBuilder sb = new();
+        for (int i = 0; i < SendBase; i++)
         {
-            SendWindowSize = Math.Min(SendWindowSize + 1, 64); // Cap at 64
+            sb.Append($"{i.ToString("000")} ");
         }
 
-        // check for completion
-        if (_unacked.Count == 0 && _sendQueue.Count == 0 && _started)
+        foreach (var seqNum in _unacked.Keys)
         {
-            _started = false;
-            OnAllDataReceived?.Invoke(Array.Empty<byte>(), ElapsedTime);
-            ElapsedTime = 0.0f;
+            sb.Append("### ");
         }
+
+        int totalSegments = (int)NextSeqNum + _sendQueue.Count;
+
+        for (long i = ackNumber + _unacked.Count; i < totalSegments; i++)
+        {
+            sb.Append("... ");
+        }
+
+        //Simulation.Instance.WriteOutput(sb.ToString());
 
         // now that we have more space in the window, try sending more data
         TrySendQueuedData();
+
+        // check for completion: if ACK number acknowledges all data
+        if (SendBase >= NextSeqNum)
+        {
+            OnAllDataReceived?.Invoke(ReceivedData.ToArray(), ElapsedTime);
+        }
     }
 
     public void Update(float delta)
@@ -223,6 +303,26 @@ public class TcpSession : IUpdateable
 
         // update timers for unacknowledged segments
         var keysToCheck = new List<uint>(_unacked.Keys);
+
+        if (_rtt != null && CwndTimer >= _rtt)
+        {
+            // increase congestion window every RTT
+            if (SendWindowSize < SlowStartThreshold)
+            {
+                // slow start phase: double the window
+                SendWindowSize *= 2;
+            }
+            else
+            {
+                // congestion avoidance phase: increase by 1 MSS
+                SendWindowSize += 1;
+            }
+            CwndTimer = 0.0f;
+        }
+        else
+        {
+            CwndTimer += delta;
+        }
 
         foreach (var seqNum in keysToCheck)
         {
@@ -237,8 +337,10 @@ public class TcpSession : IUpdateable
 
                 // congestion control: on timeout, halve the window and double
                 // RTO
-                SendWindowSize = Math.Max(1, SendWindowSize / 2);
-                _rto = Math.Min(_rto * 2, 60.0f);
+                SlowStartThreshold = Math.Max(SendWindowSize / 2, 2);
+                SendWindowSize = 1;
+                Console.WriteLine($"Timeout on segment {seqNum}, " +
+                    $"reducing window to {SendWindowSize}");
             }
 
             _unacked[seqNum] = entry;

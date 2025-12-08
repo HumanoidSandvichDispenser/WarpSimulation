@@ -26,20 +26,47 @@ public class WarpNode
     public Dictionary<Link, Queue<Packets.PhysicalPacket>> PacketQueue { get; } = new();
 
     /// <summary>
+    /// Indicates whether the node is active, i.e., able to send and receive
+    /// datagrams. This can be used to simulate node failures.
+    /// </summary>
+    public bool IsActive { get; set; } = true;
+
+    /// <summary>
     /// The processing delay at this node in seconds.
     /// </summary>
     public float ProcessingDelay { get; set; } = 1e-6f;
 
     /// <summary>
-    /// Total number of packets dropped at this node due to routing issues.
+    /// Total number of bytes dropped at this node due to queue overflow.
     /// </summary>
-    public int TotalDroppedPackets { get; private set; } = 0;
+    public int BytesDropped { get; private set; } = 0;
 
-    public double ByteLossRate { get; private set; } = 0.0f;
+    /// <summary>
+    /// Byte loss rate at this node, based on the number of bytes dropped
+    /// versus the total number of bytes processed at a given time.
+    /// </summary>
+    public double ByteLossRate { get; private set; } = 0.0;
 
-    public float HelloInterval { get; set; } = 5.0f;
+    /// <summary>
+    /// Interval in seconds between sending hello packets.
+    /// </summary>
+    public float HelloInterval { get; set; } = 2f;
 
-    public float HelloBroadcastTimer { get; private set; } = 0.0f;
+    /// <summary>
+    /// Number of hello packets to send to neighbors before broadcasting to
+    /// the entire network.
+    /// </summary>
+    public int HelloBroadcastInterval { get; set; } = 5;
+
+    /// <summary>
+    /// Timer tracking time since last hello packet was sent.
+    /// </summary>
+    public float HelloTimer { get; private set; } = 0.0f;
+
+    /// <summary>
+    /// Counter for hello broadcasts sent.
+    /// </summary>
+    public int HelloBroadcastCounter { get; set; } = 0;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WarpNode"/> class.
@@ -51,6 +78,11 @@ public class WarpNode
         Name = name;
         Position = position ?? Vector2.Zero;
         Database = new WarpDatabase(this);
+
+        // offset hello timer and broadcast counter to avoid synchronization,
+        // which can lead to network congestion
+        HelloTimer = HelloInterval * (float)(new Random().NextDouble());
+        HelloBroadcastCounter = new Random().Next(HelloBroadcastInterval);
     }
 
     /// <summary>
@@ -95,6 +127,8 @@ public class WarpNode
             capacity[link] = linkRecord.EffectiveBandwidth;
         }
 
+        double shortestPathWeight = 0;
+
         foreach (var (nextPath, index) in shortestPaths.Select((path, idx) => (path, idx)))
         {
             // the shortest path algorithm returns a list of vertices rather
@@ -119,11 +153,19 @@ public class WarpNode
                     usage[edge] += minAvailCapacity;
                 }
 
+                shortestPathWeight = nextPath.TotalWeight;
                 OnPathAccepted?.Invoke(this, nextPath);
                 yield return nextPath;
             }
             else
             {
+                if (nextPath.TotalWeight > 2.0 * shortestPathWeight)
+                {
+                    // path is too long compared to shortest path
+                    OnPathPruned?.Invoke(this, nextPath);
+                    continue;
+                }
+
                 if (minAvailCapacity <= 0)
                 {
                     // no more bandwidth available on some edge in this path
@@ -156,8 +198,8 @@ public class WarpNode
     }
 
     /// <summary>
-    /// Determines the next hop for a given datagram based on its destination
-    /// and the node's path selection logic.
+    /// Determines the next hop for a given unicast datagram based on its
+    /// destination and the node's path selection logic.
     /// </summary>
     /// <returns>
     /// A tuple containing the (possibly modified) datagram and the next hop
@@ -169,6 +211,13 @@ public class WarpNode
         if (datagram.Destination == this)
         {
             return (datagram, null);
+        }
+
+        if (datagram.Destination is null)
+        {
+            // only unicast datagrams should be processed here
+            throw new InvalidOperationException(
+                "Cannot determine next hop for broadcast datagram.");
         }
 
         if (datagram is Packets.WarpDatagram warpDatagram)
@@ -185,7 +234,6 @@ public class WarpNode
             else
             {
                 // path exhausted, drop datagram
-                TotalDroppedPackets += 1;
                 return (datagram, null);
             }
         }
@@ -214,20 +262,21 @@ public class WarpNode
         return (datagram, null);
     }
 
+    /// <summary>
+    /// Receives a datagram, whether from a directly connected neighbor or
+    /// from the transport layer. Processes the datagram based on its
+    /// destination.
+    /// </summary>
     public void ReceiveDatagram(Packets.Datagram datagram)
     {
-        if (datagram.Destination == this)
+        if (!IsActive)
         {
-            OnDatagramReceived?.Invoke(this, datagram);
+            // node is inactive, drop datagram
+            return;
         }
-        else if (datagram.Destination is null)
-        {
-            if (datagram is not Packets.WarpLsaDatagram lsa)
-            {
-                // only broadcast LSA datagrams
-                return;
-            }
 
+        if (datagram is Packets.WarpLsaDatagram lsa)
+        {
             // update database with LSA (returns false if LSA is stale)
             if (!Database.ProcessLsa(lsa))
             {
@@ -235,13 +284,27 @@ public class WarpNode
                 return;
             }
 
+            if (datagram.Destination is not null)
+            {
+                // LSA is unicast, do not broadcast
+                return;
+            }
+
             OnDatagramReceived?.Invoke(this, datagram);
             var graph = Simulation.Instance.NetworkGraph;
-            var neighborsEdges = graph.GetNeighbors(this);
-            foreach (var (neighbor, edge) in neighborsEdges)
+            var lsaClone = (Packets.WarpLsaDatagram)lsa.Clone();
+            lsaClone.ForwardingNode = this;
+            foreach (var (neighbor, edge) in graph.GetNeighbors(this))
             {
-                SendDatagram(neighbor, datagram);
+                if (neighbor != lsa.Source && neighbor != lsa.ForwardingNode)
+                {
+                    SendDatagram(neighbor, lsaClone);
+                }
             }
+        }
+        else if (datagram.Destination == this)
+        {
+            OnDatagramReceived?.Invoke(this, datagram);
         }
         else
         {
@@ -259,8 +322,17 @@ public class WarpNode
         }
     }
 
+    /// <summary>
+    /// Sends a datagram to a specified endpoint node.
+    /// </summary>
     public void SendDatagram(WarpNode endpoint, Packets.Datagram datagram)
     {
+        if (!IsActive)
+        {
+            // node is inactive, cannot send datagram
+            return;
+        }
+
         var graph = Simulation.Instance.NetworkGraph;
         var link = graph.GetEdge(this, endpoint);
 
@@ -288,22 +360,52 @@ public class WarpNode
     /// </param>
     public void SendHello(bool broadcast)
     {
-        throw new NotImplementedException();
+        var graph = Simulation.Instance.NetworkGraph;
+        var nodeRecord = Database.CreateNodeRecord();
+
+        foreach (var (neighbor, _) in graph.GetNeighbors(this))
+        {
+            var lsa = new Packets.WarpLsaDatagram(
+                source: this,
+                destination: broadcast ? null : neighbor);
+
+            lsa.SequenceNumber = Database.GetNextSequenceNumber();
+            lsa.NodeRecord = nodeRecord;
+
+            SendDatagram(neighbor, lsa);
+        }
     }
 
+    /// <summary>
+    /// Called every simulation update to process outgoing packets.
+    /// </summary>
     public void Update(float deltaTime)
     {
-        foreach (var (link, queue) in PacketQueue)
+        if (!IsActive)
         {
-            if (queue.Count > 0)
+            // node is inactive, skip update
+            return;
+        }
+
+        // update hello timer
+        HelloTimer += deltaTime;
+        if (HelloTimer >= HelloInterval)
+        {
+            bool broadcast = HelloBroadcastCounter >= HelloBroadcastInterval;
+            SendHello(broadcast);
+            HelloTimer -= HelloInterval;
+            if (broadcast)
             {
-                var packet = queue.Peek();
-                if (link.TransmitPacket(packet))
-                {
-                    queue.Dequeue();
-                }
+                HelloBroadcastCounter = 0;
+            }
+            else
+            {
+                HelloBroadcastCounter++;
             }
         }
+
+        // update database to check for neighbor timeouts
+        Database.Update(deltaTime);
     }
 
     /// <summary>
@@ -333,7 +435,9 @@ public class WarpNode
 
     public void Draw()
     {
-        Raylib.DrawCircleV(Position, 16.0f, Color.Blue);
+        Color nodeColor = IsActive ? Color.Blue : Color.DarkGray;
+
+        Raylib.DrawCircleV(Position, 16.0f, nodeColor);
         const int fontSize = 20;
         int width = Raylib.MeasureText(Name, fontSize);
         Vector2 textPos = new Vector2(

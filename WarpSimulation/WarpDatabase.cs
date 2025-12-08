@@ -1,5 +1,3 @@
-using System;
-
 namespace WarpSimulation;
 
 using DijkstraResult = UndirectedWeightedGraph<WarpNode, Link>.DijkstraResult;
@@ -61,13 +59,45 @@ public class WarpDatabase
 
     public Dictionary<WarpNode, WarpNodeRecord> NodeRecords { get; private set; } = new();
 
+    /// <summary>
+    /// The direct neighbors of this node, with the time since the last LSA was
+    /// received from them.
+    /// </summary>
+    public Dictionary<WarpNode, float> DirectNeighbors { get; private set; } = new();
+
+    /// <summary>
+    /// The link records for each link in the local graph.
+    /// </summary>
     public Dictionary<Link, LinkRecord> LinkRecords { get; private set; } = new();
 
+    /// <summary>
+    /// Cached routes to each destination node.
+    /// </summary>
     public Dictionary<WarpNode, List<RouteInformation>> Routes { get; private set; } = new();
 
+    /// <summary>
+    /// The latest sequence numbers seen from each node.
+    /// </summary>
     public Dictionary<WarpNode, int> SequenceNumbers { get; private set; } = new();
 
+    /// <summary>
+    /// The latest sequence numbers seen from each node.
+    /// </summary>
+    public Dictionary<WarpNode, WarpNode> SequenceNumberOrigin { get; private set; } = new();
+
+    /// <summary>
+    /// The maximum sequence number seen from any node, used for generating new
+    /// sequence numbers for LSAs.
+    /// </summary>
     public int MaxSequenceNumber { get; private set; } = 0;
+
+    /// <summary>
+    /// The timeout in seconds for considering a direct neighbor dead or
+    /// unreachable if no LSAs are received.
+    /// </summary>
+    public int LsaNeighborTimeout { get; set; } = 8;
+
+    private float _elapsedTime = 0;
 
     public WarpNode Owner { get; init; }
 
@@ -87,7 +117,7 @@ public class WarpDatabase
     public record struct LinkRecord(
         Link Link,
         WarpNode ConnectedNode,
-        float EffectiveBandwidth);
+        double EffectiveBandwidth);
 
     public WarpDatabase(WarpNode owner)
     {
@@ -104,17 +134,28 @@ public class WarpDatabase
     /// Processes an incoming LSA datagram, updating the local database
     /// if the LSA is newer than the stored version.
     /// </summary>
-    /// <returns>True if the LSA was processed and the database updated; false otherwise.</returns>
+    /// <returns>
+    /// <c>true</c> if the database updated; <c>false</c> otherwise.
+    /// </returns>
     public bool ProcessLsa(Packets.WarpLsaDatagram lsa)
     {
         if (!SequenceNumbers.ContainsKey(lsa.NodeRecord.Node))
         {
             SequenceNumbers[lsa.NodeRecord.Node] = 0;
+            SequenceNumberOrigin[lsa.NodeRecord.Node] = lsa.ForwardingNode;
         }
 
         if (lsa.SequenceNumber <= SequenceNumbers[lsa.NodeRecord.Node])
         {
             // stale LSA, ignore
+
+            // but if it's from a direct neighbor (forwarded by them), reset
+            // timer
+            if (DirectNeighbors.ContainsKey(lsa.ForwardingNode))
+            {
+                DirectNeighbors[lsa.ForwardingNode] = 0;
+            }
+
             return false;
         }
 
@@ -125,7 +166,12 @@ public class WarpDatabase
         }
 
         SequenceNumbers[lsa.NodeRecord.Node] = lsa.SequenceNumber;
+        SequenceNumberOrigin[lsa.NodeRecord.Node] = lsa.ForwardingNode;
         UpdateDatabase(lsa.NodeRecord);
+
+        // then add direct neighbor as an edge
+        AddNeighborFromLsa(lsa);
+
         return true;
     }
 
@@ -139,20 +185,56 @@ public class WarpDatabase
         LocalGraph.AddVertex(update.Node);
         NodeRecords[update.Node] = update;
 
-        // add/update edges from update
-        foreach (var link in update.Links)
+        // if edge exists, update it; else add it
+        foreach (var linkRecord in update.Links)
         {
-            LocalGraph.AddVertex(link.ConnectedNode);
-            LocalGraph.AddEdge(update.Node, link.ConnectedNode, link.Link.Clone());
-            LinkRecords[link.Link] = link;
+            var existingLink = LocalGraph.GetEdge(update.Node, linkRecord.ConnectedNode);
+
+            LinkRecord newLinkRecord = linkRecord;
+
+            if (existingLink is not null)
+            {
+                // update existing link's effective bandwidth
+                newLinkRecord.Link = existingLink;
+                LinkRecords[existingLink] = linkRecord;
+            }
+            else
+            {
+                // add new edge to graph
+                var clonedLink = linkRecord.Link.Clone();
+                LocalGraph.AddEdge(update.Node, linkRecord.ConnectedNode, clonedLink);
+                newLinkRecord.Link = clonedLink;
+                LinkRecords[clonedLink] = newLinkRecord;
+            }
         }
 
-        // remove edges not in update
-        foreach (var (vertex, edge) in LocalGraph.Adjacency[update.Node])
+        // remove edges not in update (only applicable when not applying an
+        // update from self)
+        if (update.Node == Owner)
         {
-            if (!update.Links.Any(l => l.ConnectedNode == vertex))
+            Routes.Clear();
+            return;
+        }
+
+        Queue<WarpNode>? endpointsToRemove = null;
+        foreach (var (vertex, edge) in LocalGraph.GetNeighbors(update.Node))
+        {
+            // check for each edge to see if it's in the update
+            if (!update.Links.Any(link => edge.Equals(link.Link)))
             {
-                LocalGraph.RemoveEdge(update.Node, vertex);
+                // remove edge
+                endpointsToRemove ??= new();
+                endpointsToRemove.Enqueue(vertex);
+                LinkRecords.Remove(edge);
+            }
+        }
+
+        if (endpointsToRemove is not null)
+        {
+            while (endpointsToRemove.Count > 0)
+            {
+                var endpoint = endpointsToRemove.Dequeue();
+                LocalGraph.RemoveEdge(update.Node, endpoint);
             }
         }
 
@@ -176,11 +258,13 @@ public class WarpDatabase
                     continue;
                 }
 
+                // clone the edge to avoid shared references, since adding
+                // edges modifies their endpoints
                 var clonedEdge = edge.Clone();
                 var linkRecord = new LinkRecord(
                     Link: clonedEdge,
                     ConnectedNode: neighbor,
-                    EffectiveBandwidth: (float)edge.CalculateEffectiveBandwidth());
+                    EffectiveBandwidth: edge.CalculateEffectiveBandwidth());
 
                 links.Add(linkRecord);
 
@@ -197,6 +281,12 @@ public class WarpDatabase
 
             NodeRecords[vertex] = nodeRecord;
             LocalGraph.AddVertex(vertex);
+        }
+
+        // then for each neighbor of ours, add to direct neighbors
+        foreach (var (neighbor, _) in LocalGraph.GetNeighbors(Owner))
+        {
+            DirectNeighbors[neighbor] = 0;
         }
     }
 
@@ -243,7 +333,7 @@ public class WarpDatabase
             double alpha(int size) => 1.0f + size / (size + 512.0f);
             double initialWeight = route.Path.TotalWeight;
             double weight = Math.Pow(initialWeight, alpha(packetSize))
-                + route.DeficitBytes / packetSize;
+                + route.DeficitBytes / alpha(packetSize);
             route.AdjustedWeight = Math.Max(weight, 0.0);
             totalWeight += weight;
         }
@@ -280,5 +370,147 @@ public class WarpDatabase
         }
 
         return selectedRoute;
+    }
+
+    /// <summary>
+    /// Gets the next sequence number for an LSA datagram
+    /// to be sent from the owner node.
+    /// </summary>
+    public int GetNextSequenceNumber()
+    {
+        return MaxSequenceNumber + 1;
+    }
+
+    /// <summary>
+    /// Creates a node record for the owner node based on its current links.
+    /// </summary>
+    public WarpNodeRecord CreateNodeRecord()
+    {
+        var links = new List<LinkRecord>();
+
+        foreach (var (neighbor, edge) in LocalGraph.GetNeighbors(Owner))
+        {
+            var link = LocalGraph.GetEdge(Owner, neighbor)!;
+
+            var linkRecord = new LinkRecord(
+                Link: link,
+                ConnectedNode: neighbor,
+                EffectiveBandwidth: link.CalculateEffectiveBandwidth());
+
+            links.Add(linkRecord);
+        }
+
+        var nodeRecord = new WarpNodeRecord(
+            Node: Owner,
+            Links: links);
+
+        return nodeRecord;
+    }
+
+    private void AddNeighborFromLsa(Packets.WarpLsaDatagram lsa)
+    {
+        var localLink = LocalGraph.GetEdge(
+            Owner,
+            lsa.ForwardingNode);
+
+        //Console.WriteLine($"Node {Owner.Name} adding neighbor {lsa.ForwardingNode.Name} from LSA of {lsa.NodeRecord.Node.Name}");
+
+        if (localLink is not null)
+        {
+            // reset timer for direct neighbor
+            DirectNeighbors[lsa.ForwardingNode] = 0;
+            return;
+        }
+
+        var directLink = Simulation.Instance.NetworkGraph.GetEdge(
+            Owner,
+            lsa.ForwardingNode);
+
+        if (directLink is not null)
+        {
+            var clonedLink = directLink.Clone();
+            var newRecord = CreateNodeRecord();
+            newRecord.Links.Add(new LinkRecord(
+                Link: clonedLink,
+                ConnectedNode: lsa.ForwardingNode,
+                EffectiveBandwidth: clonedLink.CalculateEffectiveBandwidth()));
+            UpdateDatabase(newRecord);
+            DirectNeighbors[lsa.ForwardingNode] = 0;
+        }
+    }
+
+    private void DeclareNeighborDead(WarpNode neighbor)
+    {
+        // first remove from direct neighbors and node records
+        DirectNeighbors.Remove(neighbor);
+        NodeRecords.Remove(neighbor);
+
+        Console.WriteLine($"Node {Owner.Name} declared neighbor {neighbor.Name} dead.");
+
+        // remove link record
+        var link = LocalGraph.GetEdge(Owner, neighbor)!;
+        LinkRecords.Remove(link);
+
+        // get neighbors of the dead neighbor to notify
+        var neighborsOfNeighbor = LocalGraph.GetNeighbors(neighbor)
+            .Select(n => n.Vertex)
+            .Where(n => n != Owner)
+            .ToList();
+
+        // update graph to remove edge
+        LocalGraph.RemoveEdge(Owner, neighbor);
+
+        Routes.Clear();
+
+        // Then notify other neighbors that the link between you and neighbor
+        // is down by sending updated LSA. This just means our node and the
+        // dead neighbor are not connected, not that the neighbor is down; it
+        // is the responsibility of other nodes to determine that based on
+        // their own direct connections
+        foreach (var neighborOfNeighbor in neighborsOfNeighbor)
+        {
+            if (neighborOfNeighbor == Owner)
+            {
+                continue;
+            }
+
+            var lsa = new Packets.WarpLsaDatagram(Owner, neighborOfNeighbor)
+            {
+                SequenceNumber = GetNextSequenceNumber(),
+                NodeRecord = CreateNodeRecord()
+            };
+
+            Owner.SendDatagram(neighborOfNeighbor, lsa);
+        }
+    }
+
+    public void Update(float deltaTime)
+    {
+        _elapsedTime += deltaTime;
+
+        // update direct neighbor timers
+
+        // make a hashset of neighbors to remove to avoid modifying during
+        // iteration
+        HashSet<WarpNode>? neighborsToRemove = null;
+
+        foreach (var neighbor in DirectNeighbors.Keys.ToList())
+        {
+            DirectNeighbors[neighbor] += deltaTime;
+            if (DirectNeighbors[neighbor] >= LsaNeighborTimeout)
+            {
+                // neighbor considered dead
+                neighborsToRemove ??= new HashSet<WarpNode>();
+                neighborsToRemove.Add(neighbor);
+            }
+        }
+
+        if (neighborsToRemove is not null)
+        {
+            foreach (var neighbor in neighborsToRemove)
+            {
+                DeclareNeighborDead(neighbor);
+            }
+        }
     }
 }

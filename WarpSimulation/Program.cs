@@ -19,7 +19,9 @@ internal static class Program
     public static void Main(string[] args)
     {
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint);
-        Raylib.InitWindow(1280, 720, "WARP Network Simulation");
+        Raylib.SetConfigFlags(ConfigFlags.AlwaysRunWindow);
+        Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
+        Raylib.InitWindow(960, 720, "WARP Network Simulation");
         Raylib.SetTargetFPS(60);
 
         Simulation simulation = Simulation.Instance;
@@ -54,11 +56,24 @@ internal static class Program
 
             float delta = Raylib.GetFrameTime();
 
+            // measure frame time
+            double start = Raylib.GetTime();
             simulation.Update(delta);
+            double end = Raylib.GetTime();
+            double frameTime = end - start;
 
             Raylib.BeginDrawing();
             Raylib.ClearBackground(Color.White);
+
             simulation.Draw();
+
+            // draw frame time in bottom right corner
+            string frameTimeText = $"Frame Time: {frameTime * 1000.0:F2} ms";
+            float textWidth = Raylib.MeasureText(frameTimeText, 20);
+            int windowWidth = Raylib.GetScreenWidth();
+            int windowHeight = Raylib.GetScreenHeight();
+            Raylib.DrawText(frameTimeText, windowWidth - (int)textWidth - 8, windowHeight - 28, 20, Color.Black);
+
             Raylib.EndDrawing();
         }
 

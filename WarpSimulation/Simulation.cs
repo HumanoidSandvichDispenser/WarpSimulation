@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Text.Json;
+using Raylib_cs;
 
 namespace WarpSimulation;
 
@@ -19,6 +20,10 @@ public class Simulation
 
     public Queue<IUpdateable> RemoveUpdateableQueue { get; } = new();
 
+    public bool IsPaused { get; set; } = false;
+
+    public WarpNetworkGraph? ViewingGraph { get; set; } = null;
+
     /// <summary>
     /// A multiplier affecting the rate of traffic generation. Higher values
     /// result in more traffic.
@@ -32,6 +37,18 @@ public class Simulation
 
     public void Update(float delta)
     {
+        // check if just pressed space to pause/unpause
+        if (Raylib.IsKeyPressed(KeyboardKey.Space))
+        {
+            IsPaused = !IsPaused;
+            WriteOutput(IsPaused ? "Simulation paused." : "Simulation unpaused.");
+        }
+
+        if (IsPaused)
+        {
+            return;
+        }
+
         while (AddUpdateableQueue.Count > 0)
         {
             var packet = AddUpdateableQueue.Dequeue();
@@ -97,6 +114,25 @@ public class Simulation
                 }
                 SetTopK(args[0], args[1]);
                 break;
+            case "toggle":
+                if (args.Length == 0)
+                {
+                    WriteOutput("Usage: toggle <node name>");
+                    break;
+                }
+                ToggleNode(args[0]);
+                break;
+            case "view":
+                if (args.Length == 0)
+                {
+                    ViewingGraph = null;
+                    WriteOutput("Reset to viewing full network graph. Use 'view <node name>' to view a specific node's database graph.");
+                }
+                else
+                {
+                    ViewNodeLocalGraph(args[0]);
+                }
+                break;
             default:
                 WriteOutput($"Unknown command: {command}");
                 break;
@@ -110,7 +146,14 @@ public class Simulation
 
     public void Draw()
     {
-        NetworkGraph.Draw();
+        if (ViewingGraph is not null)
+        {
+            ViewingGraph.Draw();
+        }
+        else
+        {
+            NetworkGraph.Draw();
+        }
 
         foreach (var packet in _updateables)
         {
@@ -172,7 +215,7 @@ public class Simulation
 
         foreach (var node in NetworkGraph.Vertices)
         {
-            node.Database.UpdateDatabaseFromGraph(NetworkGraph);
+            //node.Database.UpdateDatabaseFromGraph(NetworkGraph);
         }
     }
 
@@ -266,5 +309,34 @@ public class Simulation
 
         node.Database.TopK = k;
         WriteOutput($"Node {nodeName} set to use top {k} paths for routing.");
+    }
+
+    public void ToggleNode(string nodeName)
+    {
+        var node = NetworkGraph.Vertices
+            .FirstOrDefault(v => v.Name == nodeName);
+
+        if (node is null)
+        {
+            WriteOutput("Invalid node.");
+            return;
+        }
+
+        node.IsActive = !node.IsActive;
+
+        WriteOutput($"Node {nodeName} is now {(node.IsActive ? "active" : "inactive")}.");
+    }
+
+    public void ViewNodeLocalGraph(string nodeName)
+    {
+        var node = NetworkGraph.Vertices
+            .FirstOrDefault(v => v.Name == nodeName);
+        if (node is null)
+        {
+            WriteOutput("Invalid node.");
+            return;
+        }
+        ViewingGraph = node.Database.LocalGraph;
+        WriteOutput($"Now viewing local graph of node {nodeName}.");
     }
 }
