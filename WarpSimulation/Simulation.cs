@@ -1,3 +1,5 @@
+using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.Numerics;
 using System.Text.Json;
 using Raylib_cs;
@@ -24,6 +26,10 @@ public class Simulation
 
     public WarpNetworkGraph? ViewingGraph { get; set; } = null;
 
+    public bool PopulateDatabasesOnLoad { get; set; } = false;
+
+    public uint FrameCount { get; set; } = 0;
+
     /// <summary>
     /// A multiplier affecting the rate of traffic generation. Higher values
     /// result in more traffic.
@@ -37,6 +43,8 @@ public class Simulation
 
     public void Update(float delta)
     {
+        FrameCount++;
+
         // check if just pressed space to pause/unpause
         if (Raylib.IsKeyPressed(KeyboardKey.Space))
         {
@@ -96,7 +104,7 @@ public class Simulation
                     WriteOutput("Usage: send <source> <destination> <message length>");
                     break;
                 }
-                SendMessage(args[0], args[1], args[2]);
+                SendMessage(args);
                 break;
             case "load":
                 if (args.Length == 0)
@@ -121,6 +129,15 @@ public class Simulation
                     break;
                 }
                 ToggleNode(args[0]);
+                break;
+            case "screenshot":
+                if (!Raylib.IsWindowReady())
+                {
+                    break;
+                }
+                string filename = args.Length > 0 ? args[0] : $"screenshot_{FrameCount}.png";
+                Raylib.TakeScreenshot(filename);
+                WriteOutput($"Screenshot saved to {filename}");
                 break;
             case "view":
                 if (args.Length == 0)
@@ -213,9 +230,12 @@ public class Simulation
             NetworkGraph.AddEdge(node1, node2, link);
         }
 
-        foreach (var node in NetworkGraph.Vertices)
+        if (PopulateDatabasesOnLoad)
         {
-            //node.Database.UpdateDatabaseFromGraph(NetworkGraph);
+            foreach (var node in NetworkGraph.Vertices)
+            {
+                node.Database.UpdateDatabaseFromGraph(NetworkGraph);
+            }
         }
     }
 
@@ -250,36 +270,87 @@ public class Simulation
             $"(Cost: {result.TotalWeight:0.##})");
     }
 
-    public void SendMessage(string startName, string endName, string messageLength)
+    private WarpNode? ParseNodeName(ArgumentResult result)
     {
-        var start = NetworkGraph.Vertices
-            .FirstOrDefault(v => v.Name == startName);
-        var end = NetworkGraph.Vertices
-            .FirstOrDefault(v => v.Name == endName);
-
-        int length = int.Parse(messageLength);
-
-        if (start is null || end is null)
+        var token = result.Tokens.FirstOrDefault();
+        if (token is null)
         {
-            WriteOutput("Invalid start or end node.");
+            result.AddError("No node name provided");
+            return null;
+        }
+        var nodeName = token.Value;
+        var node = NetworkGraph.Vertices
+            .FirstOrDefault(v => v.Name == nodeName);
+        if (node is null)
+        {
+            result.AddError($"Node '{nodeName}' not found");
+            return null;
+        }
+        return node;
+    }
+
+    public void SendMessage(string[] args)
+    {
+        Argument<WarpNode> startNode = new("start")
+        {
+            CustomParser = ParseNodeName,
+            Arity = ArgumentArity.ExactlyOne,
+        };
+        Argument<WarpNode> endNode = new("end")
+        {
+            CustomParser = ParseNodeName,
+            Arity = ArgumentArity.ExactlyOne,
+        };
+        Argument<int> messageLengthArg = new("messageLength")
+        {
+            Arity = ArgumentArity.ExactlyOne,
+        };
+        Option<bool> quitOnTransmit = new("--quit-on-transmit")
+        {
+            Description = "Quit the simulation once all messages have been transmitted.",
+            DefaultValueFactory = _ => false,
+        };
+
+        var rootCommand = new RootCommand("send")
+        {
+            startNode,
+            endNode,
+            messageLengthArg,
+            quitOnTransmit,
+        };
+
+        var parseResult = rootCommand.Parse(args);
+
+        if (parseResult.Errors.Count > 0)
+        {
+            foreach (var error in parseResult.Errors)
+            {
+                WriteOutput($"Error: {error.Message}");
+            }
             return;
         }
 
+        WarpNode start = parseResult.GetValue(startNode)!;
+        WarpNode end = parseResult.GetValue(endNode)!;
+        int length = parseResult.GetValue(messageLengthArg)!;
+
         TransportLayer.TcpSession sender = new(start);
         TransportLayer.TcpSession receiver = new(end);
+
         sender.PeerSession = receiver;
         receiver.PeerSession = sender;
 
-        sender.OnAllDataReceived += (data, time) =>
+        sender.OnAllDataReceived += (_, time) =>
         {
-            WriteOutput($"Message of size {data.Length} bytes " +
-                $"received by {endName} from {startName} " +
-                $"in {time:0.##} seconds.");
-        };
+            WriteOutput($"Message of size {length} bytes " +
+                $"received by {end.Name} from {start.Name} " +
+                $"in {time:0.####} seconds.");
 
-        receiver.OnDataReceived += (data) =>
-        {
-            WriteOutput($"Node {endName} received {data.Length} bytes of data.");
+            if (parseResult.GetValue(quitOnTransmit))
+            {
+                WriteOutput("All messages transmitted. Quitting simulation.");
+                System.Environment.Exit(0);
+            }
         };
 
         AddUpdateableQueue.Enqueue(sender);
@@ -287,7 +358,7 @@ public class Simulation
 
         sender.SendData(new byte[length]);
 
-        WriteOutput($"Sending message from {startName} to {endName} of size {length} bytes.");
+        WriteOutput($"Sending message from {start.Name} to {end.Name} of size {length} bytes.");
     }
 
     public void SetTopK(string nodeName, string kStr)

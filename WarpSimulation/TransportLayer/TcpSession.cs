@@ -288,8 +288,9 @@ public class TcpSession : IUpdateable
         TrySendQueuedData();
 
         // check for completion: if ACK number acknowledges all data
-        if (SendBase >= NextSeqNum)
+        if (SendBase >= NextSeqNum && _started)
         {
+            _started = false;
             OnAllDataReceived?.Invoke(ReceivedData.ToArray(), ElapsedTime);
         }
     }

@@ -1,0 +1,561 @@
+Run 1 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.35 seconds.
+All messages transmitted. Quitting simulation.
+Run 2 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.2417 seconds.
+All messages transmitted. Quitting simulation.
+Run 3 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 1, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.15 seconds.
+All messages transmitted. Quitting simulation.
+Run 4 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 4, reducing window to 1
+Timeout on segment 5, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 9, reducing window to 2
+Triple duplicate ACKs for segment 9, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.85 seconds.
+All messages transmitted. Quitting simulation.
+Run 5 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.4458 seconds.
+All messages transmitted. Quitting simulation.
+Run 6 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.4708 seconds.
+All messages transmitted. Quitting simulation.
+Run 7 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 4, reducing window to 1
+Timeout on segment 5, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 9, reducing window to 2
+Triple duplicate ACKs for segment 9, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.7833 seconds.
+All messages transmitted. Quitting simulation.
+Run 8 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 5, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Triple duplicate ACKs for segment 8, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.6417 seconds.
+All messages transmitted. Quitting simulation.
+Run 9 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 5, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Triple duplicate ACKs for segment 8, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.5 seconds.
+All messages transmitted. Quitting simulation.
+Run 10 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 1, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.2542 seconds.
+All messages transmitted. Quitting simulation.
+Run 11 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.3625 seconds.
+All messages transmitted. Quitting simulation.
+Run 12 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.4458 seconds.
+All messages transmitted. Quitting simulation.
+Run 13 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.2583 seconds.
+All messages transmitted. Quitting simulation.
+Run 14 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.5042 seconds.
+All messages transmitted. Quitting simulation.
+Run 15 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.3958 seconds.
+All messages transmitted. Quitting simulation.
+Run 16 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.2333 seconds.
+All messages transmitted. Quitting simulation.
+Run 17 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.1417 seconds.
+All messages transmitted. Quitting simulation.
+Run 18 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.0458 seconds.
+All messages transmitted. Quitting simulation.
+Run 19 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 4, reducing window to 1
+Timeout on segment 5, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Timeout on segment 8, reducing window to 1
+Triple duplicate ACKs for segment 9, reducing window to 2
+Triple duplicate ACKs for segment 9, reducing window to 2
+Triple duplicate ACKs for segment 9, reducing window to 2
+Triple duplicate ACKs for segment 11, reducing window to 2
+Message of size 16384 bytes received by P from A in 4.325 seconds.
+All messages transmitted. Quitting simulation.
+Run 20 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.5708 seconds.
+All messages transmitted. Quitting simulation.
+Run 21 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.2417 seconds.
+All messages transmitted. Quitting simulation.
+Run 22 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.3583 seconds.
+All messages transmitted. Quitting simulation.
+Run 23 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 4, reducing window to 1
+Timeout on segment 5, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 9, reducing window to 2
+Triple duplicate ACKs for segment 9, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.925 seconds.
+All messages transmitted. Quitting simulation.
+Run 24 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 4, reducing window to 1
+Timeout on segment 5, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Timeout on segment 8, reducing window to 1
+Triple duplicate ACKs for segment 9, reducing window to 2
+Triple duplicate ACKs for segment 9, reducing window to 2
+Triple duplicate ACKs for segment 11, reducing window to 2
+Triple duplicate ACKs for segment 11, reducing window to 2
+Message of size 16384 bytes received by P from A in 4.2416 seconds.
+All messages transmitted. Quitting simulation.
+Run 25 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 1, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.2417 seconds.
+All messages transmitted. Quitting simulation.
+Run 26 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 5, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Triple duplicate ACKs for segment 8, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.6042 seconds.
+All messages transmitted. Quitting simulation.
+Run 27 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.2375 seconds.
+All messages transmitted. Quitting simulation.
+Run 28 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 4, reducing window to 1
+Timeout on segment 5, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 9, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.85 seconds.
+All messages transmitted. Quitting simulation.
+Run 29 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.1417 seconds.
+All messages transmitted. Quitting simulation.
+Run 30 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.4792 seconds.
+All messages transmitted. Quitting simulation.
+Run 31 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.1375 seconds.
+All messages transmitted. Quitting simulation.
+Run 32 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 5, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Triple duplicate ACKs for segment 8, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.55 seconds.
+All messages transmitted. Quitting simulation.
+Run 33 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.2375 seconds.
+All messages transmitted. Quitting simulation.
+Run 34 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.4875 seconds.
+All messages transmitted. Quitting simulation.
+Run 35 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.1375 seconds.
+All messages transmitted. Quitting simulation.
+Run 36 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 5, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Triple duplicate ACKs for segment 8, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.5958 seconds.
+All messages transmitted. Quitting simulation.
+Run 37 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.5417 seconds.
+All messages transmitted. Quitting simulation.
+Run 38 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 5, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Triple duplicate ACKs for segment 8, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.6292 seconds.
+All messages transmitted. Quitting simulation.
+Run 39 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.2625 seconds.
+All messages transmitted. Quitting simulation.
+Run 40 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.1375 seconds.
+All messages transmitted. Quitting simulation.
+Run 41 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.1458 seconds.
+All messages transmitted. Quitting simulation.
+Run 42 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.6667 seconds.
+All messages transmitted. Quitting simulation.
+Run 43 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.1292 seconds.
+All messages transmitted. Quitting simulation.
+Run 44 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.45 seconds.
+All messages transmitted. Quitting simulation.
+Run 45 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.3708 seconds.
+All messages transmitted. Quitting simulation.
+Run 46 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.2625 seconds.
+All messages transmitted. Quitting simulation.
+Run 47 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 2, reducing window to 1
+Timeout on segment 3, reducing window to 1
+Triple duplicate ACKs for segment 4, reducing window to 2
+Message of size 16384 bytes received by P from A in 3.4708 seconds.
+All messages transmitted. Quitting simulation.
+Run 48 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.1417 seconds.
+All messages transmitted. Quitting simulation.
+Run 49 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 1, reducing window to 1
+Message of size 16384 bytes received by P from A in 3.2458 seconds.
+All messages transmitted. Quitting simulation.
+Run 50 (size=16384, k=1)
+Node A set to use top 1 paths for routing.
+Node A set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Node P set to use top 1 paths for routing.
+Sending message from A to P of size 16384 bytes.
+Timeout on segment 3, reducing window to 1
+Timeout on segment 4, reducing window to 1
+Timeout on segment 5, reducing window to 1
+Timeout on segment 6, reducing window to 1
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 7, reducing window to 2
+Triple duplicate ACKs for segment 9, reducing window to 2
+Triple duplicate ACKs for segment 9, reducing window to 2
+Message of size 16384 bytes received by P from A in 4.0541 seconds.
+All messages transmitted. Quitting simulation.
