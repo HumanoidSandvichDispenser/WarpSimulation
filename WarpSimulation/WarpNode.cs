@@ -228,8 +228,22 @@ public class WarpNode
             if (currentHopIndex < warpDatagram.Path.Count)
             {
                 WarpNode nextHop = warpDatagram.Path[currentHopIndex];
-                warpDatagram.CurrentHopIndex = currentHopIndex;
-                return (warpDatagram, nextHop);
+
+                if (Database.LocalGraph.GetEdge(this, nextHop) is null)
+                {
+                    // next hop is not directly connected, recompute path
+                    // (fall through to path selection outside of outer block)
+
+                    // lazily update a dead link in the database by
+                    // broadcasting new link state when a path fails AND
+                    // recomputation is needed
+                    HelloBroadcastCounter = HelloBroadcastInterval;
+                }
+                else
+                {
+                    warpDatagram.CurrentHopIndex = currentHopIndex;
+                    return (warpDatagram, nextHop);
+                }
             }
             else
             {
@@ -237,26 +251,24 @@ public class WarpNode
                 return (datagram, null);
             }
         }
-        else
+
+        // transform datagram into a WarpDatagram using K-Path Selection
+        var route = Database.PickPath(datagram.Destination, datagram.Size);
+
+        if (route is not null)
         {
-            // transform datagram into a WarpDatagram using K-Path Selection
-            var route = Database.PickPath(datagram.Destination, datagram.Size);
+            // construct WarpDatagram
+            var paths = route.Path.Path.ToList();
+            var newWarpDatagram = new Packets.WarpDatagram(
+                datagram.Source,
+                datagram.Destination,
+                paths,
+                datagram.Payload);
+            newWarpDatagram.CurrentHopIndex = 1;
 
-            if (route is not null)
-            {
-                // construct WarpDatagram
-                var paths = route.Path.Path.ToList();
-                var newWarpDatagram = new Packets.WarpDatagram(
-                    datagram.Source,
-                    datagram.Destination,
-                    paths,
-                    datagram.Payload);
-                newWarpDatagram.CurrentHopIndex = 1;
-
-                // next hop is the second node in the path
-                WarpNode nextHop = paths[1];
-                return (newWarpDatagram, nextHop);
-            }
+            // next hop is the second node in the path
+            WarpNode nextHop = paths[1];
+            return (newWarpDatagram, nextHop);
         }
 
         return (datagram, null);
