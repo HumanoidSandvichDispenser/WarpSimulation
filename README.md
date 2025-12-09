@@ -35,8 +35,8 @@ and default parameters as:
 This command starts the simulation with the specified JSON file describing the
 network topology. The next section of this README describes the available
 commands. For examples on how these commands can be used, Section 3 of the
-report `warp-report.pdf` contains various scenarios and their corresponding
-command sequences.
+report `report.pdf` contains various scenarios and their corresponding command
+sequences.
 
 ### (Optional) Statistical Analysis
 
@@ -67,7 +67,8 @@ console. Below are commands that can be used during the simulation:
 ## Technical Report
 
 A detailed technical report describing the WARP protocol and simulation results
-is available in `warp-report.pdf`
+is available in `report.pdf` (included with the assignment submission, but not
+on GitHub).
 
 # Code Overview (where is what?)
 
