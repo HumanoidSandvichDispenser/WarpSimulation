@@ -1,5 +1,8 @@
 namespace WarpSimulation;
 
+/// <summary>
+/// A queue that holds packets up to a certain byte capacity.
+/// </summary>
 public class ByteQueue
 {
     private Queue<Packets.PhysicalPacket> _queue = new();

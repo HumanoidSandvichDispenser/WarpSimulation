@@ -4,6 +4,9 @@ This program simulates the novel Weighted Average Routing Protocol (WARP) for
 efficient multipath routing in mesh networks to increase throughput and reduce
 loss.
 
+This README is also available on [GitHub](https://github.com/HumanoidSandvichDispenser/WarpSimulation)
+for easier viewing.
+
 ## Build Instructions
 
 This C# program requires the [.NET SDK](https://dotnet.microsoft.com/en-us/download)
@@ -65,3 +68,45 @@ console. Below are commands that can be used during the simulation:
 
 A detailed technical report describing the WARP protocol and simulation results
 is available in `warp-report.pdf`
+
+# Code Overview (where is what?)
+
+Because this project contains multiple components with each file having
+hundreds of lines of code, reading the comments alone may not be sufficient to
+understand the program and its structure.
+
+Below is a brief description of the important files and their purposes:
+
+- `Program.cs`: The main entry point of the program. It handles
+  command line arguments, initializes the simulation, and starts the command
+  loop and graphical interface.
+- `Simulation.cs`: The simulation class that manages the overall
+  simulation state, including the network graph, nodes, packets, and time steps.
+  Commands from the user are also processed here.
+- `WarpNode.cs`: The class representing a node in the mesh network.
+  This class is responsible for choosing the next hop, encapsulating packets,
+  sending and receiving packets (including hellos and LSAs). This also contains
+  the algorithm used to **filter out paths** based on similarity.
+- `WarpDatabase.cs`: The class representing the routing database for a
+  node, maintaining the link state information. This also contains the
+  algorithm used to **select paths** based on weight and round-robin deficit.
+  `WarpNode` calls into this class whenever it needs to update the database
+  with new LSAs or query the database for a path.
+- `UndirectedWeightedGraph.cs`: A generic undirected weighted graph
+  implementation.
+- `UndirectedWeightedGraph.Algorithms.cs`: A partial class
+  (extension) for `UndirectedWeightedGraph` that contains various graph
+  algorithms, including Dijkstra's shortest path algorithm and Yen's K-Shortest
+  Paths algorithm.
+- `WarpNetworkGraph.cs`: A subclass of `UndirectedWeightedGraph`
+  that represents the mesh network topology.
+- `Link.cs`: The class representing a link between two nodes in the
+  mesh network.
+- `Packets/*.cs`, `TransportLayer/TcpSegment.cs`: Various packet types used in
+  the simulation, including data packets, hello packets, and link state
+  advertisements (LSAs).
+- `TransportLayer/TcpSession.cs`: The class representing a TCP session
+  between two nodes, handling segmentation and reassembly of data packets.
+- `ByteQueue.cs`: A simple queue for bytes, used by `WarpNode` to buffer
+  outgoing data. This is also used by `WarpDatabase` to track the size of the
+  queue to determine weights for paths.

@@ -2,6 +2,10 @@ using Raylib_cs;
 
 namespace WarpSimulation.Packets;
 
+/// <summary>
+/// A datagram packet for the WARP protocol that includes a predefined path
+/// of WARP nodes to traverse.
+/// </summary>
 public class WarpDatagram : Datagram
 {
     public List<WarpNode> Path { get; set; }

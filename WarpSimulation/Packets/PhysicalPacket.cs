@@ -4,8 +4,8 @@ using Raylib_cs;
 namespace WarpSimulation.Packets;
 
 /// <summary>
-/// Represents a physical packet in the WARP network, encapsulating
-/// a datagram. Link layer is abstracted away for simplicity.
+/// Represents a L2/L1 packet in the WARP network, encapsulating
+/// a datagram.
 /// </summary>
 public class PhysicalPacket : IPacket, IUpdateable, IDrawable
 {
@@ -39,6 +39,8 @@ public class PhysicalPacket : IPacket, IUpdateable, IDrawable
 
     public void Update(float deltaTime)
     {
+        // update transmission progress and check for completion, invoking
+        // event if done (which will be handled by the Link class)
         TransmissionProgress += deltaTime;
         if (TransmissionProgress >= TransmissionTime)
         {

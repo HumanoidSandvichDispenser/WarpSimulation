@@ -439,9 +439,11 @@ public class WarpNode
         Database.Update(deltaTime);
     }
 
+    /// <summary>
+    /// Draws the node in the simulation view.
+    /// </summary>
     public void Draw()
     {
-        //Color nodeColor = IsActive ? Color.Blue : Color.DarkGray;
         Color nodeColor = Color.Blue;
 
         if (!IsActive)

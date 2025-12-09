@@ -3,6 +3,10 @@ using WarpSimulation.TransportLayer;
 
 namespace WarpSimulation.Packets;
 
+/// <summary>
+/// A datagram packet that contains source and destination information,
+/// as well as an optional payload.
+/// </summary>
 public class Datagram : IPacket
 {
     public WarpNode Source { get; set; }

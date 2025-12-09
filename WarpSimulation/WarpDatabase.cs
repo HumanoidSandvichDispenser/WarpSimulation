@@ -104,6 +104,9 @@ public class WarpDatabase
 
     private int _topK = 8;
 
+    /// <summary>
+    /// The number of top paths to consider for routing decisions.
+    /// </summary>
     public int TopK
     {
         get => _topK;
@@ -261,6 +264,11 @@ public class WarpDatabase
         Routes.Clear();
     }
 
+    /// <summary>
+    /// Rebuilds the entire local database from the provided network graph.
+    /// This is used at initialization to skip the initial LSA exchange
+    /// process, allowing nodes to start with a full view of the network.
+    /// </summary>
     public void UpdateDatabaseFromGraph(WarpNetworkGraph graph)
     {
         LocalGraph.Clear();
@@ -337,6 +345,10 @@ public class WarpDatabase
         return Routes[destination];
     }
 
+    /// <summary>
+    /// Picks a path to the specified destination based on adjusted weights
+    /// and deficits, updating the deficits accordingly.
+    /// </summary>
     public RouteInformation? PickPath(WarpNode destination, int packetSize)
     {
         List<RouteInformation> routes = GetRoutes(destination);
@@ -434,6 +446,7 @@ public class WarpDatabase
         return nodeRecord;
     }
 
+    // adds a direct neighbor from an LSA if applicable
     private void AddNeighborFromLsa(Packets.WarpLsaDatagram lsa)
     {
         var localLink = LocalGraph.GetEdge(
@@ -464,6 +477,7 @@ public class WarpDatabase
         }
     }
 
+    // declares a neighbor dead due to timeout
     private void DeclareNeighborDead(WarpNode neighbor)
     {
         // first remove from direct neighbors and node records

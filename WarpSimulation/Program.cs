@@ -159,6 +159,9 @@ internal static class Program
         return 0;
     }
 
+    /// <summary>
+    /// Processes a single line of input as a command to the simulation.
+    /// </summary>
     static void ProcessInput(string input, Simulation simulation)
     {
         input = input.Trim();
@@ -170,6 +173,10 @@ internal static class Program
         simulation.ProcessCommand(command, argList);
     }
 
+    /// <summary>
+    /// Thread method to read input from the console while the simulation is
+    /// running.
+    /// </summary>
     static void InputThread()
     {
         lock (s_consoleLock)
@@ -226,6 +233,9 @@ internal static class Program
         }
     }
 
+    /// <summary>
+    /// Redraws the input line at the bottom of the console.
+    /// </summary>
     private static void RedrawInputLine()
     {
         if (Console.IsOutputRedirected || Console.IsInputRedirected)
@@ -246,6 +256,10 @@ internal static class Program
         Console.Write("> " + s_inputBuffer);
     }
 
+    /// <summary>
+    /// Writes output to the console, handling redrawing the input line if
+    /// necessary.
+    /// </summary>
     internal static void WriteOutput(string text)
     {
         lock (s_consoleLock)

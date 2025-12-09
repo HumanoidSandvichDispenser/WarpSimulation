@@ -1,5 +1,9 @@
 namespace WarpSimulation.Packets;
 
+/// <summary>
+/// A datagram packet that contains a WARP Link State Advertisement (LSA),
+/// used for sharing network topology information between WARP nodes.
+/// </summary>
 public class WarpLsaDatagram : Datagram, ICloneable
 {
     public WarpLsaDatagram(WarpNode source, WarpNode? destination)

@@ -60,6 +60,9 @@ public partial class UndirectedWeightedGraph<TVertex, TEdge>
         Adjacency = new();
     }
 
+    /// <summary>
+    /// Adds a vertex to the graph.
+    /// </summary>
     public void AddVertex(TVertex vertex)
     {
         if (vertex is null || vertex.Equals(default))
@@ -76,6 +79,9 @@ public partial class UndirectedWeightedGraph<TVertex, TEdge>
         _cachedVertices = null;
     }
 
+    /// <summary>
+    /// Removes a vertex from the graph.
+    /// </summary>
     public void RemoveVertex(TVertex vertex)
     {
         if (vertex is null || vertex.Equals(default))
@@ -130,6 +136,9 @@ public partial class UndirectedWeightedGraph<TVertex, TEdge>
         _cachedEdges = null;
     }
 
+    /// <summary>
+    /// Removes the edge between two vertices.
+    /// </summary>
     public void RemoveEdge(TVertex from, TVertex to)
     {
         if (Adjacency.ContainsKey(from))
@@ -153,11 +162,17 @@ public partial class UndirectedWeightedGraph<TVertex, TEdge>
         _cachedEdges = null;
     }
 
+    /// <summary>
+    /// Determines if the graph contains the given vertex.
+    /// </summary>
     public bool ContainsVertex(TVertex vertex)
     {
         return Adjacency.ContainsKey(vertex);
     }
 
+    /// <summary>
+    /// Gets the edge between two vertices, or null if no such edge exists.
+    /// </summary>
     public TEdge? GetEdge(TVertex from, TVertex to)
     {
         if (Adjacency.ContainsKey(from))
@@ -170,6 +185,9 @@ public partial class UndirectedWeightedGraph<TVertex, TEdge>
         return default;
     }
 
+    /// <summary>
+    /// Gets the neighbors of the given vertex as (vertex, edge) pairs.
+    /// </summary>
     public IEnumerable<(TVertex Vertex, TEdge Edge)> GetNeighbors(TVertex vertex)
     {
         if (Adjacency.ContainsKey(vertex))
@@ -180,6 +198,10 @@ public partial class UndirectedWeightedGraph<TVertex, TEdge>
         return Enumerable.Empty<(TVertex, TEdge)>();
     }
 
+    /// <summary>
+    /// Gets the edges corresponding to the given sequence of vertices.
+    /// If any edge does not exist, the enumeration stops.
+    /// </summary>
     public IEnumerable<TEdge> GetEdges(IEnumerable<TVertex> vertices)
     {
         TVertex prev = default!;
