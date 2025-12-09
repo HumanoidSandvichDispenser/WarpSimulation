@@ -38,7 +38,7 @@ public class WarpNodeTest
     }
 
     [Obsolete("This test is not valid anymore since we prune paths that are too long compared to the shortest path.")]
-    public void KPathSelection_DiscardsFilledBandwidth()
+    private void KPathSelection_DiscardsFilledBandwidth()
     {
         var graph = new WarpNetworkGraph();
 
@@ -73,7 +73,7 @@ public class WarpNodeTest
     // this test is not valid anymore since we prune paths that are
     // too long compared to the shortest path, so do not use it
     [Obsolete("This test is not valid anymore since we prune paths that are too long compared to the shortest path.")]
-    public void KPathSelection_DiscardsFilledBandwidth2()
+    private void KPathSelection_DiscardsFilledBandwidth2()
     {
         var graph = new WarpNetworkGraph();
 

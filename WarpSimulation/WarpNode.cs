@@ -23,7 +23,7 @@ public class WarpNode
     /// </summary>
     public WarpDatabase Database { get; private set; }
 
-    public Dictionary<Link, Queue<Packets.PhysicalPacket>> PacketQueue { get; } = new();
+    public Dictionary<Link, ByteQueue> PacketQueue { get; } = new();
 
     /// <summary>
     /// Indicates whether the node is active, i.e., able to send and receive
@@ -31,21 +31,30 @@ public class WarpNode
     /// </summary>
     public bool IsActive { get; set; } = true;
 
-    /// <summary>
-    /// The processing delay at this node in seconds.
-    /// </summary>
-    public float ProcessingDelay { get; set; } = 1e-6f;
+    private int _queueCapacity = 65536;
 
     /// <summary>
-    /// Total number of bytes dropped at this node due to queue overflow.
+    /// The node's current queue capacity in bytes. Must be set to at least
+    /// 1 MTU (1500 bytes). Note that setting this property during the
+    /// simulation will drop ALL packets in its queues.
     /// </summary>
-    public int BytesDropped { get; private set; } = 0;
+    public int QueueCapacity
+    {
+        get => _queueCapacity;
+        set
+        {
+            if (value < 1500)
+            {
+                value = 1500;
+            }
 
-    /// <summary>
-    /// Byte loss rate at this node, based on the number of bytes dropped
-    /// versus the total number of bytes processed at a given time.
-    /// </summary>
-    public double ByteLossRate { get; private set; } = 0.0;
+            _queueCapacity = value;
+            foreach (var key in PacketQueue.Keys)
+            {
+                PacketQueue[key] = new ByteQueue(value);
+            }
+        }
+    }
 
     /// <summary>
     /// Interval in seconds between sending hello packets.
@@ -302,6 +311,9 @@ public class WarpNode
                 return;
             }
 
+            // LSA is broadcast, so broadcast to all neighbors
+            // except if we think they are the source or it's the same
+            // interface it came from
             OnDatagramReceived?.Invoke(this, datagram);
             var graph = Simulation.Instance.NetworkGraph;
             var lsaClone = (Packets.WarpLsaDatagram)lsa.Clone();
@@ -324,11 +336,12 @@ public class WarpNode
 
             if (nextHop != null)
             {
+                // send datagram to calculated route/next hop
                 SendDatagram(nextHop, nextDatagram);
             }
             else
             {
-                // drop datagram
+                // no route found, drop datagram
                 return;
             }
         }
@@ -357,9 +370,10 @@ public class WarpNode
 
             if (!PacketQueue.ContainsKey(link))
             {
-                PacketQueue[link] = new();
+                PacketQueue[link] = new ByteQueue(_queueCapacity);
             }
-            PacketQueue[link].Enqueue(physicalPacket);
+
+            PacketQueue[link].TryEnqueue(physicalPacket);
         }
     }
 
@@ -375,8 +389,13 @@ public class WarpNode
         var graph = Simulation.Instance.NetworkGraph;
         var nodeRecord = Database.CreateNodeRecord();
 
+        // use actual network graph to get our links (the network interfaces 
+        // of this node)
         foreach (var (neighbor, _) in graph.GetNeighbors(this))
         {
+            // we use null for destination to indicate broadcast,
+            // otherwise we only *unicast multiple* datagrams
+            // on each interface
             var lsa = new Packets.WarpLsaDatagram(
                 source: this,
                 destination: broadcast ? null : neighbor);
@@ -420,38 +439,29 @@ public class WarpNode
         Database.Update(deltaTime);
     }
 
-    /// <summary>
-    /// Dumps the contents of the node's database to a string for
-    /// visualization, monitoring, or debugging purposes.
-    /// </summary>
-    public string DumpDatabase()
-    {
-        System.Text.StringBuilder sb = new();
-
-        sb.AppendLine($"Node {Name} Database Dump:");
-
-        foreach (var (node, record) in Database.NodeRecords)
-        {
-            sb.AppendLine($"  Node: {node.Name}");
-            sb.AppendLine($"    Links:");
-            foreach (var linkRecord in record.Links)
-            {
-                var link = linkRecord.Link;
-                sb.AppendLine($"      Link to {link.GetOtherNode(node).Name}:");
-                sb.AppendLine($"        Effective Bandwidth: {linkRecord.EffectiveBandwidth}");
-            }
-        }
-
-        return sb.ToString();
-    }
-
     public void Draw()
     {
-        Color nodeColor = IsActive ? Color.Blue : Color.DarkGray;
+        //Color nodeColor = IsActive ? Color.Blue : Color.DarkGray;
+        Color nodeColor = Color.Blue;
+
+        if (!IsActive)
+        {
+            nodeColor = Color.DarkGray;
+        }
 
         if (Simulation.Instance.ViewingNode == this)
         {
             nodeColor = Color.SkyBlue;
+            
+            // set the text of the edges to the effective bandwidth from the link records
+            foreach (var link in Database.LocalGraph.Edges)
+            {
+                if (Database.LinkRecords.ContainsKey(link))
+                {
+                    double bw = Database.LinkRecords[link].EffectiveBandwidth;
+                    link.OverrideBandwidthValueText = bw;
+                }
+            }
         }
 
         Raylib.DrawCircleV(Position, 16.0f, nodeColor);

@@ -194,9 +194,9 @@ public class WarpDatabase
 
             if (existingLink is not null)
             {
-                // update existing link's effective bandwidth
+                // update existing link
                 newLinkRecord.Link = existingLink;
-                LinkRecords[existingLink] = linkRecord;
+                LinkRecords[existingLink] = newLinkRecord;
             }
             else
             {
@@ -391,11 +391,13 @@ public class WarpDatabase
         foreach (var (neighbor, edge) in LocalGraph.GetNeighbors(Owner))
         {
             var link = LocalGraph.GetEdge(Owner, neighbor)!;
+            bool debug = Owner.Name == "C";
+            double bw = link.CalculateEffectiveBandwidth(debug);
 
             var linkRecord = new LinkRecord(
                 Link: link,
                 ConnectedNode: neighbor,
-                EffectiveBandwidth: link.CalculateEffectiveBandwidth());
+                EffectiveBandwidth: bw);
 
             links.Add(linkRecord);
         }
@@ -412,8 +414,6 @@ public class WarpDatabase
         var localLink = LocalGraph.GetEdge(
             Owner,
             lsa.ForwardingNode);
-
-        //Console.WriteLine($"Node {Owner.Name} adding neighbor {lsa.ForwardingNode.Name} from LSA of {lsa.NodeRecord.Node.Name}");
 
         if (localLink is not null)
         {

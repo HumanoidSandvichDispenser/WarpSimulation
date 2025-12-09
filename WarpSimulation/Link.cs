@@ -30,13 +30,42 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
 
     public Packets.PhysicalPacket?[] Transit { get; } = new Packets.PhysicalPacket?[2];
 
+    /// <summary>
+    /// If set, the link will be drawn with the bandwidth value set to this
+    /// instead of its actual bandwidth. Used for displaying what a node
+    /// estimates a link's bandwidth to be.
+    /// </summary>
+    public double? OverrideBandwidthValueText { get; set; } = null;
+
     public Link(double bandwidth = 4096)
     {
         Bandwidth = bandwidth;
         CalculateEffectiveBandwidth();
     }
 
-    public double CalculateEffectiveBandwidth()
+    private double GetQueueRatio(int vertexIndex, bool debug = false)
+    {
+        var vertex = Vertices[vertexIndex];
+        if (vertex?.PacketQueue.ContainsKey(this) ?? false)
+        {
+            double ratio = vertex.PacketQueue[this].QueueRatio;
+
+            // only significant if at least 1% of queue is filled
+            if (ratio >= 0.01f)
+            {
+                return ratio;
+            }
+        }
+
+        if (vertex is null)
+        {
+            Console.WriteLine("vertex is null???");
+        }
+
+        return 0;
+    }
+
+    public double CalculateEffectiveBandwidth(bool debug = false)
     {
         double effectiveBandwidth = Bandwidth;
 
@@ -45,10 +74,9 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
             effectiveBandwidth *= 0.5;
         }
 
-        double loss1 = Vertices[0]?.ByteLossRate ?? 0;
-        double loss2 = Vertices[1]?.ByteLossRate ?? 0;
-
-        effectiveBandwidth *= (1.0 - loss1) * (1.0 - loss2);
+        double queueRatio1 = GetQueueRatio(0, debug);
+        double queueRatio2 = GetQueueRatio(1, debug);
+        effectiveBandwidth *= (1.0 - queueRatio1) * (1.0 - queueRatio2);
 
         if (effectiveBandwidth == 0)
         {
@@ -87,7 +115,7 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
     public bool TransmitPacket(Packets.PhysicalPacket packet)
     {
         int index = GetNodeIndex(packet.StartNode);
-        float transmissionTime = (float)(packet.Size * 8 / EffectiveBandwidth);
+        float transmissionTime = (float)(packet.Size * 8 / Bandwidth);
 
         if (Transit[index] is not null)
         {
@@ -217,8 +245,10 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
 
         Vector2 center = (v1 + v2) / 2;
 
+        double bandwidthValue = OverrideBandwidthValueText ?? Bandwidth;
+
         const int fontSize = 20;
-        string text = $"{Bandwidth / 1024.0:0.##}";
+        string text = $"{bandwidthValue / 1024.0:0.##}";
         int width = Raylib.MeasureText(text, fontSize);
         Vector2 textPos = new Vector2(
             center.X - width / 2,
