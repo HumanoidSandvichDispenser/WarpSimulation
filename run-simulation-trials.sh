@@ -1,7 +1,12 @@
 #! /bin/sh
 #
-# run-simulations.sh
+# run-simulation-trials.sh
 #
+
+# This script runs multiple trials of the network simulation. It sends messages
+# of varying sizes, which is encapsulated into TCP segments and WARP datagrams.
+# The script measures the time taken to transmit the data and logs the results
+# into a CSV file for statistical analysis.
 
 
 echo "Creating logs directory"
