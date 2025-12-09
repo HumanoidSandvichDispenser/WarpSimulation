@@ -12,7 +12,7 @@ echo "k,bytes,time" > logs/results.csv
 
 for size in 16384 32768 65536 131072; do
     for k in 1 8; do
-        for i in {1..10}; do
+        for i in {1..50}; do
             sleep 0.0625
             ./run.sh ./mesh_network.json --populate-db --simulate-frames 9600 <<EOF
 topk A $k
