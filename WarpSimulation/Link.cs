@@ -5,16 +5,7 @@ namespace WarpSimulation;
 
 public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
 {
-    private double _weight = 0;
-
-    public double Weight => _weight;
-
-    /// <summary>
-    /// The link's effective bandwidth in bits per second, accounting for
-    /// failure rate, processing delay, and other factors. This is the
-    /// bandwidth used for routing calculations.
-    /// </summary>
-    public double EffectiveBandwidth => CalculateEffectiveBandwidth();
+    public double Weight { get; set; }
 
     /// <summary>
     /// The link's bandwidth in bits per second. This is the raw bandwidth
@@ -43,29 +34,12 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
         CalculateEffectiveBandwidth();
     }
 
-    private double GetQueueRatio(int vertexIndex, bool debug = false)
-    {
-        var vertex = Vertices[vertexIndex];
-        if (vertex?.PacketQueue.ContainsKey(this) ?? false)
-        {
-            double ratio = vertex.PacketQueue[this].QueueRatio;
-
-            // only significant if at least 1% of queue is filled
-            if (ratio >= 0.01f)
-            {
-                return ratio;
-            }
-        }
-
-        if (vertex is null)
-        {
-            Console.WriteLine("vertex is null???");
-        }
-
-        return 0;
-    }
-
-    public double CalculateEffectiveBandwidth(bool debug = false)
+    /// <summary>
+    /// Calculates the effective bandwidth of the link, taking into account
+    /// duplexity. Other factors such as buffer load are calculated in the
+    /// WarpNode class instead.
+    /// </summary>
+    public double CalculateEffectiveBandwidth()
     {
         double effectiveBandwidth = Bandwidth;
 
@@ -74,17 +48,45 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
             effectiveBandwidth *= 0.5;
         }
 
-        double queueRatio1 = GetQueueRatio(0, debug);
-        double queueRatio2 = GetQueueRatio(1, debug);
-        effectiveBandwidth *= (1.0 - queueRatio1) * (1.0 - queueRatio2);
-
         if (effectiveBandwidth == 0)
         {
-            _weight = double.PositiveInfinity;
+            Weight = double.PositiveInfinity;
         }
         else
         {
-            _weight = 1.0 / effectiveBandwidth;
+            Weight = 1.0 / effectiveBandwidth;
+        }
+
+        return effectiveBandwidth;
+    }
+
+    /// <summary>
+    /// Calculates the effective bandwidth of the link, taking into account
+    /// the load on the nodes at either end of the link.
+    /// </summary>
+    public double CalculateEffectiveBandwidthFromNodeRecords(
+        WarpDatabase.WarpNodeRecord record1,
+        WarpDatabase.WarpNodeRecord record2)
+    {
+        double effectiveBandwidth = CalculateEffectiveBandwidth();
+        
+        if (effectiveBandwidth == 0)
+        {
+            return 0;
+        }
+
+        double load1 = record1.HighestObservedQueueRate;
+        double load2 = record2.HighestObservedQueueRate;
+
+        effectiveBandwidth *= (1.0 - load1) * (1.0 - load2);
+
+        if (effectiveBandwidth <= 0)
+        {
+            Weight = double.PositiveInfinity;
+        }
+        else
+        {
+            Weight = 1.0 / effectiveBandwidth;
         }
 
         return effectiveBandwidth;

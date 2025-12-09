@@ -49,7 +49,8 @@ public class WarpDatabase
     /// </summary>
     public record struct WarpNodeRecord(
         WarpNode Node,
-        List<LinkRecord> Links);
+        List<LinkRecord> Links,
+        double HighestObservedQueueRate = 0);
 
     /// <summary>
     /// The node's local copy of the graph. Other nodes must pass on their
@@ -188,24 +189,38 @@ public class WarpDatabase
         // if edge exists, update it; else add it
         foreach (var linkRecord in update.Links)
         {
-            var existingLink = LocalGraph.GetEdge(update.Node, linkRecord.ConnectedNode);
+            var link = LocalGraph.GetEdge(update.Node, linkRecord.ConnectedNode);
 
             LinkRecord newLinkRecord = linkRecord;
 
-            if (existingLink is not null)
+            // update effective bandwidth based on our current records
+            if (link is not null)
             {
                 // update existing link
-                newLinkRecord.Link = existingLink;
-                LinkRecords[existingLink] = newLinkRecord;
+                newLinkRecord.Link = link;
             }
             else
             {
                 // add new edge to graph
-                var clonedLink = linkRecord.Link.Clone();
-                LocalGraph.AddEdge(update.Node, linkRecord.ConnectedNode, clonedLink);
-                newLinkRecord.Link = clonedLink;
-                LinkRecords[clonedLink] = newLinkRecord;
+                link = linkRecord.Link.Clone();
+                LocalGraph.AddEdge(update.Node, linkRecord.ConnectedNode, link);
+                newLinkRecord.Link = link;
             }
+
+            // update link effective bandwidth
+            // check if both ends of the link have records
+            if (NodeRecords.ContainsKey(linkRecord.ConnectedNode))
+            {
+                if (NodeRecords.ContainsKey(update.Node))
+                {
+                    double bw = link.CalculateEffectiveBandwidthFromNodeRecords(
+                            NodeRecords[update.Node],
+                            NodeRecords[linkRecord.ConnectedNode]);
+                    newLinkRecord = newLinkRecord with { EffectiveBandwidth = bw };
+                }
+            }
+
+            LinkRecords[link] = newLinkRecord;
         }
 
         // remove edges not in update (only applicable when not applying an
@@ -391,8 +406,7 @@ public class WarpDatabase
         foreach (var (neighbor, edge) in LocalGraph.GetNeighbors(Owner))
         {
             var link = LocalGraph.GetEdge(Owner, neighbor)!;
-            bool debug = Owner.Name == "C";
-            double bw = link.CalculateEffectiveBandwidth(debug);
+            double bw = link.CalculateEffectiveBandwidth();
 
             var linkRecord = new LinkRecord(
                 Link: link,
@@ -405,6 +419,12 @@ public class WarpDatabase
         var nodeRecord = new WarpNodeRecord(
             Node: Owner,
             Links: links);
+
+        var queueLinks = Owner.PacketQueue.Keys;
+        nodeRecord.HighestObservedQueueRate = queueLinks
+            .Select(link => Owner.PacketQueue[link].QueueRatio)
+            .DefaultIfEmpty(0)
+            .Max();
 
         return nodeRecord;
     }
