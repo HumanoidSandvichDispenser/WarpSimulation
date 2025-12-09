@@ -116,7 +116,7 @@ internal static class Program
         Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint);
         Raylib.SetConfigFlags(ConfigFlags.AlwaysRunWindow);
         Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
-        Raylib.InitWindow(960, 720, "WARP Network Simulation");
+        Raylib.InitWindow(640, 480, "WARP Network Simulation");
         Raylib.SetTargetFPS(60);
 
         while (!Raylib.WindowShouldClose())

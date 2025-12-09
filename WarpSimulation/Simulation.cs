@@ -24,11 +24,18 @@ public class Simulation
 
     public bool IsPaused { get; set; } = false;
 
-    public WarpNetworkGraph? ViewingGraph { get; set; } = null;
+    public WarpNode? ViewingNode { get; set; } = null;
 
     public bool PopulateDatabasesOnLoad { get; set; } = false;
 
     public uint FrameCount { get; set; } = 0;
+
+    // the two nodes to draw the shortest paths of, for demonstration purposes
+    private (WarpNode Source, WarpNode Destination)? _drawNodePaths;
+
+    // a list of paths to highlight as the shortest paths returned by some node
+    // specified by the user
+    private List<DijkstraResult> _drawShortestPaths = [];
 
     /// <summary>
     /// A multiplier affecting the rate of traffic generation. Higher values
@@ -50,6 +57,15 @@ public class Simulation
         {
             IsPaused = !IsPaused;
             WriteOutput(IsPaused ? "Simulation paused." : "Simulation unpaused.");
+        }
+
+        // screenshot on F12
+        if (Raylib.IsKeyPressed(KeyboardKey.F12))
+        {
+            string now = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            string filename = $"screenshot_{now}.png";
+            Raylib.TakeScreenshot(filename);
+            WriteOutput($"Screenshot saved to {filename}");
         }
 
         if (IsPaused)
@@ -90,13 +106,11 @@ public class Simulation
                     }
                 }
                 break;
-            case "watch":
-                if (args.Length == 0)
-                {
-                    WriteOutput("Usage: watch <node name>");
-                    break;
-                }
-                WatchNode(args[0]);
+            case "drawpaths":
+                DrawPaths(args);
+                break;
+            case "clearpaths":
+                ClearPaths();
                 break;
             case "send":
                 if (args.Length < 3)
@@ -142,7 +156,7 @@ public class Simulation
             case "view":
                 if (args.Length == 0)
                 {
-                    ViewingGraph = null;
+                    ViewingNode = null;
                     WriteOutput("Reset to viewing full network graph. Use 'view <node name>' to view a specific node's database graph.");
                 }
                 else
@@ -163,9 +177,9 @@ public class Simulation
 
     public void Draw()
     {
-        if (ViewingGraph is not null)
+        if (ViewingNode is not null)
         {
-            ViewingGraph.Draw();
+            ViewingNode.Database.LocalGraph.Draw();
         }
         else
         {
@@ -177,6 +191,33 @@ public class Simulation
             if (packet is IDrawable drawable)
             {
                 drawable.Draw();
+            }
+        }
+
+        if (_drawNodePaths is not null)
+        {
+            // draw the node's cached paths
+            var start = _drawNodePaths.Value.Source;
+            var end = _drawNodePaths.Value.Destination;
+
+            var paths = start.Database.GetRoutes(end)
+                .Select((v) => v.Path.Path);
+
+            float i = 0;
+
+            foreach (var path in paths)
+            {
+                var edges = start.Database.LocalGraph.GetEdges(path);
+
+                Color color = Color.DarkBlue;
+
+                foreach (var edge in edges)
+                {
+                    Vector2 startV = edge.Vertices[0].Position;
+                    Vector2 endV = edge.Vertices[1].Position;
+
+                    Raylib.DrawLineEx(startV, endV, 4f, color);
+                }
             }
         }
     }
@@ -239,21 +280,47 @@ public class Simulation
         }
     }
 
-    public void WatchNode(string nodeName)
+    public void DrawPaths(string[] args)
     {
-        var node = NetworkGraph.Vertices
-            .FirstOrDefault(v => v.Name == nodeName);
+        Argument<WarpNode> source = new("source")
+        {
+            CustomParser = ParseNodeName,
+            Arity = ArgumentArity.ExactlyOne,
+        };
 
-        if (node != null)
+        Argument<WarpNode> destination = new("destination")
         {
-            node.OnPathAccepted += OnPathAccepted;
-            node.OnPathPruned += OnPathPruned;
-            WriteOutput($"Watching node '{nodeName}'.");
-        }
-        else
+            CustomParser = ParseNodeName,
+            Arity = ArgumentArity.ExactlyOne,
+        };
+
+        var rootCommand = new RootCommand("send")
         {
-            WriteOutput($"Node '{nodeName}' not found.");
+            source,
+            destination,
+        };
+
+        var parseResult = rootCommand.Parse(args);
+        if (parseResult.Errors.Count > 0)
+        {
+            foreach (var error in parseResult.Errors)
+            {
+                WriteOutput($"Error: {error.Message}");
+            }
+            return;
         }
+
+        var sourceNode = parseResult.GetValue(source)!;
+        var destinationNode = parseResult.GetValue(destination)!;
+
+        _drawNodePaths = (sourceNode, destinationNode);
+        WriteOutput($"Drawing paths between {args[0]} and {args[1]}");
+    }
+
+    public void ClearPaths()
+    {
+        _drawNodePaths = default;
+        WriteOutput("Cleared drawn paths");
     }
 
     private void OnPathAccepted(WarpNode node, DijkstraResult result)
@@ -407,7 +474,7 @@ public class Simulation
             WriteOutput("Invalid node.");
             return;
         }
-        ViewingGraph = node.Database.LocalGraph;
+        ViewingNode = node;
         WriteOutput($"Now viewing local graph of node {nodeName}.");
     }
 }

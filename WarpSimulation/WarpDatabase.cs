@@ -294,7 +294,7 @@ public class WarpDatabase
     /// Gets possible routes to the specified destination, computing them
     /// if not already cached.
     /// </summary>
-    private List<RouteInformation> GetRoutes(WarpNode destination)
+    public List<RouteInformation> GetRoutes(WarpNode destination)
     {
         // check cache for available paths to pick
         if (!Routes.ContainsKey(destination))

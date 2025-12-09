@@ -449,6 +449,11 @@ public class WarpNode
     {
         Color nodeColor = IsActive ? Color.Blue : Color.DarkGray;
 
+        if (Simulation.Instance.ViewingNode == this)
+        {
+            nodeColor = Color.SkyBlue;
+        }
+
         Raylib.DrawCircleV(Position, 16.0f, nodeColor);
         const int fontSize = 20;
         int width = Raylib.MeasureText(Name, fontSize);

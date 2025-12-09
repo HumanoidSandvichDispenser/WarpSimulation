@@ -179,4 +179,34 @@ public partial class UndirectedWeightedGraph<TVertex, TEdge>
 
         return Enumerable.Empty<(TVertex, TEdge)>();
     }
+
+    public IEnumerable<TEdge> GetEdges(IEnumerable<TVertex> vertices)
+    {
+        TVertex prev = default!;
+        foreach (var vertex in vertices)
+        {
+            if (prev is null || prev.Equals(default))
+            {
+                prev = vertex;
+                continue;
+            }
+
+            if (!Adjacency.ContainsKey(prev))
+            {
+                yield break;
+            }
+
+            var neighbor = Adjacency[prev].FirstOrDefault((ve) => ve.Vertex.Equals(vertex));
+
+            if (neighbor.Edge is null)
+            {
+                yield break;
+            }
+            else
+            {
+                prev = vertex;
+                yield return neighbor.Edge;
+            }
+        }
+    }
 }
