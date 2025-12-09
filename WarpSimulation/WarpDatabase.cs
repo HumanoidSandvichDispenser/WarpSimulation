@@ -213,10 +213,15 @@ public class WarpDatabase
             {
                 if (NodeRecords.ContainsKey(update.Node))
                 {
-                    double bw = link.CalculateEffectiveBandwidthFromNodeRecords(
-                            NodeRecords[update.Node],
-                            NodeRecords[linkRecord.ConnectedNode]);
-                    newLinkRecord = newLinkRecord with { EffectiveBandwidth = bw };
+                    // only recalculate based on queue rates if we have
+                    // multiple paths to choose from
+                    if (TopK > 1)
+                    {
+                        double bw = link.CalculateEffectiveBandwidthFromNodeRecords(
+                                NodeRecords[update.Node],
+                                NodeRecords[linkRecord.ConnectedNode]);
+                        newLinkRecord = newLinkRecord with { EffectiveBandwidth = bw };
+                    }
                 }
             }
 

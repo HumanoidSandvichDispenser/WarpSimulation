@@ -75,8 +75,9 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
             return 0;
         }
 
-        double load1 = record1.HighestObservedQueueRate;
-        double load2 = record2.HighestObservedQueueRate;
+        // load is squared to penalize lower loads less
+        double load1 = Math.Pow(record1.HighestObservedQueueRate, 2);
+        double load2 = Math.Pow(record2.HighestObservedQueueRate, 2);
 
         effectiveBandwidth *= (1.0 - load1) * (1.0 - load2);
 
@@ -224,7 +225,7 @@ public class Link : IEdge, IEdgeWithEndpoints<WarpNode>
             color = new Color(128, 128, 128);
         }
 
-        float thickness = (float)(Bandwidth / 65536);
+        float thickness = (float)(Bandwidth / 32768);
 
         if (FullDuplex)
         {
